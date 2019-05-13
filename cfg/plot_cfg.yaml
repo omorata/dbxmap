@@ -1,0 +1,54 @@
+figure:
+# mandatory
+  outfile: "test.pdf"
+# optional
+  numpanels: 4
+  xy: [2, 2]
+  dpi: 300
+  size:
+  axes:
+  labels:
+  legend:
+# optional, global if set
+  dataset:
+  cont_lines:
+  color_scale:
+  padding: [0.1, 0.1]
+
+    
+panels:
+  all:
+    view:
+      type: 'box'
+      center: [0.,0., 'arcsec' ]
+      box: [-20.,20., 'arcsec']
+    dataset_0:
+      filename: "test.fits"
+      type: 'contour'
+      gen_contour: [base, min, max, inc]
+      def_contour: [0.1, 0.2, 0.3]
+      add_contour: [0.5, 0.6]
+      line: [style:, color:, width:]
+
+    dataset_1:
+      file: "test2.fits"
+      type: 'contour'
+      gen_contour: [base, min, max, inc]
+      def_contour: [0.1, 0.2, 0.3]
+      add_contour: [0.5, 0.6]
+    
+
+    dataset_2:
+      file: "test.fits"
+      type: 'pixel'
+      range: [min, max, type]
+
+    labels:
+    legend:
+    ticks:
+      interv:
+      size:
+      color:
+    axes:
+      color:
+      units:

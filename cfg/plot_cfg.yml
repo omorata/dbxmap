@@ -1,0 +1,7 @@
+figure:
+  outfile: test_out.pdf
+  dpi: 300
+  dataset:
+    filename: "test_map.fits"
+    type: contour
+    
