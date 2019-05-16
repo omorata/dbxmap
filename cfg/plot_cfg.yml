@@ -1,7 +1,50 @@
 figure:
-  outfile: test_out.pdf
-  dpi: 300
-  dataset:
-    filename: "test_map.fits"
-    type: contour
-    
+  outfile: 'out.pdf'
+  dpi: 200
+  xy: [2,2]
+  size: [12, 12]
+
+
+panels:
+  panel_01:
+    dataset_01: 
+      filename: 'test_map2.fits'
+      dims: [0,1]
+      type: 'pixel'
+
+    view: 
+      type: 'radius'
+      radius: 0.00138889
+
+    dataset_02:
+      filename: 'test_map2.fits'
+      dims: [0,1]
+      type: 'cntr'
+
+  panel_02:
+    dataset_01: 
+      filename: 'test_map.fits'
+      dims: [0,1]
+      type: 'pixel'
+    view: 
+      type: 'radius'
+      radius: 0.00138889
+
+    dataset_02:
+      filename: 'test_map.fits'
+      dims: [0,1]
+      type: 'cntr'
+
+  panel_03:
+    dataset_01: 
+      filename: 'test_map3.fits'
+      dims: [0,1]
+      type: 'pixel'
+    view: 
+      type: 'radius'
+      radius: 0.00138889
+
+    dataset_02:
+      filename: 'test_map3.fits'
+      dims: [0,1]
+      type: 'cntr'
