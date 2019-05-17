@@ -7,19 +7,18 @@ figure:
 
 panels:
   panel_01:
-    dataset_01: 
-      filename: 'test_map2.fits'
-      dims: [0,1]
-      type: 'pixel'
-
-    view: 
-      type: 'radius'
-      radius: 0.00138889
-
+    view: { type: 'radius', radius: 0.00138889 }
+    labels:
+      lab1: { text: "J041757\nuniform", relative: True,
+            position: [0.15, 0.90], color: 'yellow', size: 16 }
+    dataset_01:
+      { filename: 'test_map2.fits', dims: [0,1], type: 'pixel' }
     dataset_02:
-      filename: 'test_map2.fits'
-      dims: [0,1]
-      type: 'cntr'
+      { filename: 'test_map2.fits', dims: [0,1], type: 'cntr' }
+      # style of contours: color, style, line width
+      #cntr_props:
+      #color: 'blue'
+      #  width: 4
 
   panel_02:
     dataset_01: 
@@ -34,6 +33,9 @@ panels:
       filename: 'test_map.fits'
       dims: [0,1]
       type: 'cntr'
+    labels:
+      lab1: { text: "J041757\nnatural", relative: True,
+            position: [0.15, 0.90], color: 'yellow', size: 16 }
 
   panel_03:
     dataset_01: 
@@ -48,3 +50,6 @@ panels:
       filename: 'test_map3.fits'
       dims: [0,1]
       type: 'cntr'
+    labels:
+      lab1: { text: "J041757\n rob=0 ", relative: True,
+            position: [0.15, 0.90], color: 'yellow', size: 16 }

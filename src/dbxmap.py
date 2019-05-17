@@ -25,7 +25,51 @@ import yaml
 #    from yaml import Loader, Dumper
 
 
-    
+class Label(object):
+
+    def __init__(self, cfg):
+        if 'text' in cfg :
+            self.text = cfg['text']
+        else :
+            self.text =""
+
+        if 'text' in cfg:
+            self.relative = cfg['relative']
+        else :
+            self.relative = True
+
+        if 'position' in cfg:
+            self.position = cfg['position']
+        else :
+            print(" ERROR")
+
+        if 'color' in cfg :    
+            self.color = cfg['color']
+        else :
+            self.color = 'black'
+
+        if 'size' in cfg:
+            self.size = cfg['size']
+        else :
+            self.size = 12
+
+        if 'style' in cfg:
+            self.style = cfg['style']
+        else :
+            self.style = 'normal'
+
+
+    def add_label(self, pp, idx) :
+        pp[idx].add_label(self.position[0], self.position[1],
+                          self.text,
+                          relative=self.relative,
+                          color=self.color,
+                          size=self.size,
+                          style=self.style)
+
+        return pp
+
+        
 ##-- Functions ---------------------------------------------------------
 
 def add_panel(xx, pstn, xcfg, idx) :
@@ -66,6 +110,15 @@ def add_panel(xx, pstn, xcfg, idx) :
         for ctr in ctrset :
             xx, ini_panel = add_dataset(xx, pstn, xcfg, idx, ctr, ini_panel)
 
+
+    if 'labels' in xcfg:
+        it_lab = [k for k in xcfg['labels'] if 'lab' in k]
+
+        for lab in it_lab:
+            l = Label(xcfg['labels'][lab])
+            xx = l.add_label(xx, idx)
+
+            
     return xx
 
 
@@ -90,27 +143,38 @@ def add_dataset(xx, pos, dcfg, idx, data, ini_flag) :
                                    subplot=pos,
                                    dimensions=dims))
 
-        xx[idx].recenter(center[0], center[1],
-                         dcfg['view']['radius'])
+        if 'view' in dcfg :
+            xx[idx].recenter(center[0], center[1],
+                             dcfg['view']['radius'])
 
         ini_flag = True
 
 
     if pltype == 'pixel':
-        if idx == 1 :
-            colmap = 'Greys'
-        else :
-            colmap = 'inferno'
-
+        colmap = 'inferno'
         xx[idx].show_colorscale(vmin=-7e-6, vmax=7e-5,
                                 stretch='linear',
                                 cmap=colmap,
                                 aspect='auto')
 
     elif pltype == 'cntr' :
-        xx[idx].show_contour(fname, levels=[1e-5,2e-5, 3e-5, 4e-5, 5e-5,
+        linecolor = 'white'
+        linestyle = None
+        linewidth = 1
+        if 'cntr_props' in dcfg[data] :
+            if 'color' in dcfg[data]['cntr_props']:
+                linecolor = dcfg[data]['cntr_props']['color']
+            if 'style' in dcfg[data]['cntr_props']:
+                linestyle = dcfg[data]['cntr_props']['style']
+            if 'width' in dcfg[data]['cntr_props']:
+                linewidth = dcfg[data]['cntr_props']['width']
+
+                
+        xx[idx].show_contour(fname, levels=[-2e-5, 1e-5,2e-5, 3e-5, 4e-5, 5e-5,
                                      6e-5],
-                             colors="red")
+                             colors=linecolor,
+                             linestyles=linestyle,
+                             linewidths=linewidth)
             
         # TODO
         # check if in every panel
