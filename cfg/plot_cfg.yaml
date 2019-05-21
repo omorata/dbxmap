@@ -25,23 +25,26 @@ panels:
     dataset_0:
       filename: "test.fits"
       type: 'contour'
-      gen_contour: [base, min, max, inc]
-      def_contour: [0.1, 0.2, 0.3]
-      add_contour: [0.5, 0.6]
-      line: [style:, color:, width:]
+      contours:
+        gen_contour: [base, min, max, inc]
+        def_contour: [0.1, 0.2, 0.3]
+        add_contour: [0.5, 0.6]
+        line: [style:, color:, width:]
 
     dataset_1:
       file: "test2.fits"
       type: 'contour'
-      gen_contour: [base, min, max, inc]
-      def_contour: [0.1, 0.2, 0.3]
-      add_contour: [0.5, 0.6]
+      contours:
+        gen_contour: [base, min, max, inc]
+        def_contour: [0.1, 0.2, 0.3]
+        add_contour: [0.5, 0.6]
     
 
     dataset_2:
       file: "test.fits"
       type: 'pixel'
-      range: [min, max, type]
+      pixrange:
+        range: [min, max, type]
 
     labels:
     legend:

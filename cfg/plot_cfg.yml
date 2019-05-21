@@ -1,20 +1,51 @@
-figure:
+page:
   outfile: 'out.pdf'
   dpi: 200
-  xy: [2,2]
-  size: [12, 12]
+  size: [14, 14]
 
 
 panels:
+  xy: [2,2]
+  view:
+    type: 'radius'
+    radius: 0.00138889
+  labels:
+    lab_g :
+      color: 'black'
+      size: 16
+  contours:
+    colors: 'red'
+    base: 8e-6
+    #levels: [-3,-2,3,4,5,6,7,8]
+  pixrange:
+    colormap: 'copper_r'
+    #base: 8e-6
+    range: [-1.6e-5, 6.5e-5]
+    #lab_B: { relative: True,
+    #         position: [0.15, 0.50], color: 'yellow', size: 16 }
   panel_01:
-    view: { type: 'radius', radius: 0.00138889 }
+    #view: { type: 'radius', radius: 0.00138889 }
     labels:
       lab1: { text: "J041757\nuniform", relative: True,
-            position: [0.15, 0.90], color: 'yellow', size: 16 }
+              position: [0.15, 0.90], color: 'yellow', size: 16 }
+     #lab2: { text: "J041757\nuniform", 
+     #        prop: 'lab_B'}
     dataset_01:
-      { filename: 'test_map2.fits', dims: [0,1], type: 'pixel' }
+      filename: 'test_map2.fits'
+      dims: [0,1]
+      type: 'pixel'
+      #pixrange:
+      #  range: [-7e-6, 7e-5]
     dataset_02:
-      { filename: 'test_map2.fits', dims: [0,1], type: 'cntr' }
+      filename: 'test_map2.fits'
+      dims: [0,1]
+      type: 'cntr'
+      contours:
+        #base: 8e-6
+        #colors: 'yellow'
+        #gen_levels: [1.,8.,1.]
+        levels: [-3,-2,3,4,5,6,7,8]
+      
       # style of contours: color, style, line width
       #cntr_props:
       #color: 'blue'
@@ -25,31 +56,37 @@ panels:
       filename: 'test_map.fits'
       dims: [0,1]
       type: 'pixel'
-    view: 
-      type: 'radius'
-      radius: 0.00138889
-
+      pixrange:
+        range: [-7e-6, 7e-5]
+    
     dataset_02:
       filename: 'test_map.fits'
       dims: [0,1]
       type: 'cntr'
+      contours:
+        base: 1e-5
+        colors: 'yellow'
+        levels: [-3,-2,3,4,5,6,7,8]
     labels:
       lab1: { text: "J041757\nnatural", relative: True,
             position: [0.15, 0.90], color: 'yellow', size: 16 }
 
   panel_03:
-    dataset_01: 
-      filename: 'test_map3.fits'
-      dims: [0,1]
-      type: 'pixel'
-    view: 
-      type: 'radius'
-      radius: 0.00138889
-
+    #position: [2,2,4]
     dataset_02:
       filename: 'test_map3.fits'
       dims: [0,1]
       type: 'cntr'
+      contours:
+        base: 1e-5
+        colors: 'yellow'
+        levels: [-3,-2,3,4,5,6,7,8]
+    dataset_01: 
+      filename: 'test_map3.fits'
+      dims: [0,1]
+      type: 'pixel'
+      pixrange:
+        range: [-7e-6, 7e-5]
     labels:
       lab1: { text: "J041757\n rob=0 ", relative: True,
             position: [0.15, 0.90], color: 'yellow', size: 16 }
