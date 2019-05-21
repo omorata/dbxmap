@@ -18,30 +18,24 @@ from astropy.io import fits
 
 import yaml
 
-#import os
-#try:
-#    from yaml import CLoader as Loader, CDumper as Dumper
-#except ImportError:
-#    from yaml import Loader, Dumper
+import os
 
-class General(object):
-    """ define object General
+
+##-- Class definitions -------------------------------------------------
+
+class Page(object):
+    """ define object Page
     """ 
-    def __init__(self, cnfg):
+    def __init__(self, cnfg, dirs):
         if 'outfile' in cnfg:
-            self.outfile = cnfg['outfile']
+            self.outfile = os.path.join(dirs['outdir'], cnfg['outfile'])
         else :
-            self.outfile = 'outfile.pdf'
+            self.outfile = './outfile.pdf'
 
         if 'dpi' in cnfg :
             self.dpi = cnfg['dpi']
         else:
             self.dpi = 100
-
-        if 'xy' in cnfg:
-            self.xy = cnfg['xy']
-        else:
-            self.xy = [1,1]
 
         if 'size' in cnfg:
             self.size = cnfg['size']
@@ -64,13 +58,14 @@ class General(object):
 class DbxFig(object):
     """ Class defining the elements of the figure
     """
-    def __init__(self,cnfg, xy):
+    def __init__(self, cnfg):
 
-        # self.view
         # self.labels
-        # self.contours
-        # self.pixrange
 
+        if 'xy' in cnfg:
+            self.xy = cnfg['xy']
+        else:
+            self.xy = [1,1]
 
         if 'view' in cnfg:
             self.view = View(cnfg['view'], self)
@@ -78,25 +73,22 @@ class DbxFig(object):
         #if 'labels' in cnfg:
 
         if 'pixrange' in cnfg:
-            self.pixrange = Pixrange(cnfg['pixrange'],self)
+            self.pixrange = Pixrange(cnfg['pixrange'], self)
 
         if 'contours' in cnfg:
             self.contour = Contour(cnfg['contours'], self)
 
 
-            
-        panel_list = []
-    
         panel_str = [k for k in cnfg if 'panel' in k]
 
         if panel_str :
-
+            panel_list = []
             p_idx = 0
             
             for panel in panel_str:
 
                 print("  + adding panel:", panel, "...")
-                panel_list.append(Panel(cnfg[panel], panel, xy, p_idx, self))
+                panel_list.append(Panel(cnfg[panel], panel, p_idx, self))
                 p_idx += 1
 
             self.panels = panel_list
@@ -106,15 +98,17 @@ class DbxFig(object):
             self.panels = []
 
             
-    def add_panels(self, fig, gc):
+    def add_panels(self, fig):
 
         p_idx = 0
+        gc = []
+        
         for p in self.panels :
             print("  + plotting panel:", p.name)
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
             
-        return 1
+        return gc
 
 
     
@@ -122,11 +116,8 @@ class DbxFig(object):
 class Panel(object) :
     """ Create a panel
     """ 
-    def __init__(self, cnfg, name, xy, idx, parent):
+    def __init__(self, cnfg, name, idx, parent):
 
-        # self.contours
-        # self.pixrange
-        
         self.name = name
 
         
@@ -134,7 +125,7 @@ class Panel(object) :
             cpos = cnfg['position']
             self.position = (cpos[0], cpos[1], cpos[2])
         else:
-            self.position = (xy[0], xy[1], idx+1)
+            self.position = (parent.xy[0], parent.xy[1], idx+1)
 
             
         if 'view' in cnfg:
@@ -516,11 +507,8 @@ class Label(object):
         else :
             self.style = 'normal'
 
-        if 'props' in cfg:
-            self.props = cfg['props']
-                             
 
-
+            
     def add_label(self, pp, idx) :
         pp[idx].add_label(self.position[0], self.position[1],
                           self.text,
@@ -531,12 +519,14 @@ class Label(object):
 
         return pp
 
+    
+##-- End of class definitions ------------------------------------------
         
 ##-- Functions ---------------------------------------------------------
-##
+
 
 def read_configuration_file(file):
-    """ Read the YAML configuration_file file
+    """ Read the YAML configuration file
     """
     print("  + reading configuration file:", file, "...")
 
@@ -546,78 +536,93 @@ def read_configuration_file(file):
         except yaml.YAMLError as exc:
             print(exc)
         
-    # modify figure keyword
-    #
-    if 'figure' in cnfg :
-        cnfg['global'] = cnfg['figure']
-        del cnfg['figure']
-    else :
-        cnfg['global'] = {}
-
+    with open('data.yml', 'a+') as outfile:
+        yaml.dump(cnfg, outfile, default_flow_style=False)
     return cnfg
 
 
 
-def process_config(config) :
+def dump_config(dfile, cnfg) :
+    """ dump the configuration in the logfile
+    """ 
+    with open(dfile, 'a+') as outfile:
+        yaml.dump(cnfg, outfile, default_flow_style=False)
+
+
+        
+def process_config(ifiles, dirs) :
     """ process the configuration file config
     """
 
-    cfg = read_configuration_file(config)
+    cfg = read_configuration_file(ifiles['config'])
 
-    if 'global' in cfg:
-        G = General(cfg['global'])
+    if 'log' in ifiles:
+        logfile = os.path.join(dirs['outdir'], ifiles['log'])
+        print("  + dumping configuration file in lofgfile:", logfile)
+        dump_config(logfile, cfg)
+        
+    if 'page' in cfg:
+        G = Page(cfg['page'], dirs)
     else :
-        G = General()
+        G = Page()
 
     if 'panels' in cfg:
-        P = DbxFig(cfg['panels'], G.xy)
+        P = DbxFig(cfg['panels'])
 
     return G, P
 
 
 
+def read_command_line() :
+    """ read command line arguments
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', action='store',
+                        help='configuration file', default='plot_cfg.yml')
+    parser.add_argument('-l', '--log', help='log_file', default=None)
+    parser.add_argument('-o', '--output_dir', help='output directory',
+                        metavar='DIR', default='.')
+    parser.add_argument('-w', '--work_dir', help='working directory',
+                        default='.')
+    return parser.parse_args()
+
+
 ##-- End of functions --------------------------------------------------
 
+##-- Main --------------------------------------------------------------
+
+
+if __name__ == "__main__" :
+    ## defaults
+    #
+    config_file = 'plot_cfg.yml'
+
+    print(" Starting...")
+
+    matplotlib.use('Agg')
 
     
-## defaults
-#
-config_file = 'plot_cfg.yml'
+    args = read_command_line()
 
-print(" Starting...")
+    dirs = {'wkdir' : args.work_dir, 'outdir' : args.output_dir}
+    files = {'config' : args.config}
 
-matplotlib.use('Agg')
+    if args.log != None:
+        files['log']
 
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--config', action='store',
-                    help='configuration file', default='plot_cfg.yml')
-parser.add_argument('-l', '--log', help='log_file', default='plot.log')
-parser.add_argument('-o', '--output_dir', help='output directory',
-                    metavar='DIR', default='.')
-parser.add_argument('-w', '--work_dir', help='working directory', default='.')
-args = parser.parse_args()
+    # process the configuration
+    #
+    Page, Panels = process_config(files, dirs)
 
 
-config_file = args.config
-wkdir = args.work_dir
-outdir = args.output_dir
-logfile = args.log
+    # make the figure
+    #
 
+    fig = Page.create()
 
-General, Panels = process_config(config_file)
+    gc = Panels.add_panels(fig)
 
+    Page.f_print(gc)
 
-gc = []
-
-
-# figure definition
-#
-fig = General.create()
-
-a = Panels.add_panels(fig, gc)
-
-General.f_print(gc)
-
-
+    
+##-- End of main -------------------------------------------------------
