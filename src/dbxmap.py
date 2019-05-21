@@ -53,6 +53,10 @@ class General(object):
         f = plt.figure(figsize=(self.size))
         return f
 
+    
+    def f_print(self, gc):
+        print("  + plotting output file:", self.outfile, "...")
+        gc[0].save(self.outfile, dpi=self.dpi)
 
     
 
@@ -526,26 +530,7 @@ fig = General.create()
 
 a = Panels.add_panels(fig, gc)
 
-#panel_str = [k for k in cfg['panels'] if 'panel' in k]
-
-#defined_panels = np.shape(panel_str)[0]
-
-# what to do if defined_panels is different than numpanels
-
-#for panel in panel_str:
-
-#    print("  + adding panel:", panel, "...")
-    
-#    position = (General.xy[0], General.xy[1], panel_idx+1)
-
-#    panel_cfg = cfg['panels'][panel]
-
-#    gc = add_panel(gc, position, panel_cfg, panel_idx)
-
-#    panel_idx += 1
-
-
-#General.print(gc)
-print("  + plotting output file:", General.outfile, "...")
-gc[0].save(General.outfile, dpi=General.dpi)
+General.f_print(gc)
+#print("  + plotting output file:", General.outfile, "...")
+#gc[0].save(General.outfile, dpi=General.dpi)
 
