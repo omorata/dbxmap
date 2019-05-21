@@ -24,16 +24,379 @@ import yaml
 #except ImportError:
 #    from yaml import Loader, Dumper
 
+class General(object):
+    """ define object General
+    """ 
+    def __init__(self, cnfg):
+        if 'outfile' in cnfg:
+            self.outfile = cnfg['outfile']
+        else :
+            self.outfile = 'outfile.pdf'
+
+        if 'dpi' in cnfg :
+            self.dpi = cnfg['dpi']
+        else:
+            self.dpi = 100
+
+        if 'xy' in cnfg:
+            self.xy = cnfg['xy']
+        else:
+            self.xy = [1,1]
+
+        if 'size' in cnfg:
+            self.size = cnfg['size']
+        else :
+            self.size = [10,10]
+
+
+    def create(self) :
+        f = plt.figure(figsize=(self.size))
+        return f
+
+
+    
+
+class DbxFig(object):
+    """ define the elements of the figure
+    """
+    def __init__(self,cnfg, xy):
+
+        # self.view
+        # self.labels
+        # self.contours
+        # self.pixrange
+
+        panel_list = []
+    
+        panel_str = [k for k in cnfg if 'panel' in k]
+
+        if panel_str :
+
+            p_idx = 0
+            
+            for panel in panel_str:
+
+                print("  + adding panel:", panel, "...")
+                panel_list.append(Panel(cnfg[panel], panel, xy, p_idx))
+                p_idx += 1
+
+            self.panels = panel_list
+            
+
+        else:
+            self.panels = []
+
+            
+    def add_panels(self, fig, gc):
+
+        p_idx = 0
+        for p in self.panels :
+            print("  + plotting panel:", p.name)
+            p.add_panel(fig, gc, p_idx)
+            p_idx += 1
+            
+        return 1
+
+
+    
+            
+class Panel(object) :
+    """ Create a panel
+    """ 
+    def __init__(self, cnfg, name, xy, idx):
+
+        # self.contours
+        # self.pixrange
+        
+        self.name = name
+
+        
+        if 'position' in cnfg:
+            cpos = cnfg['position']
+            self.position = (cpos[0], cpos[1], cpos[2])
+        else:
+            self.position = (xy[0], xy[1], idx+1)
+
+            
+        if 'view' in cnfg:
+            self.view = View(cnfg['view'])
+
+            
+        if 'labels' in cnfg:
+
+            label_list = []
+            for l in cnfg['labels'] :
+                label_list.append(Label(cnfg['labels'][l]))
+
+            self.labels = label_list
+        else:
+            self.labels = []
+
+            
+        dataset_list = []
+
+        dataset_str = [k for k in cnfg if 'dataset' in k]
+
+        if dataset_str :
+            for d in dataset_str:
+                dataset_list.append(Dataset(cnfg[d], d))
+                
+            self.datasets = dataset_list
+        else:
+            self.datasets = []
+
+
+            
+    def add_panel(self, fig, gc, idx):
+        """ add a panel to the figure
+        """
+        self.set_pixel_first()
+
+        vw = self.view
+
+        cid = 0
+        for d in self.datasets :
+            if cid == 0 :
+                if vw.center == None:
+                    vw.center = d.get_reference()
+
+                gc.append(aplpy.FITSFigure(d.filename,
+                                   figure=fig,
+                                   subplot=self.position,
+                                   dimensions=d.dims))
+
+                vw.set_view(gc, idx)
+
+            d.show(gc, idx)
+
+            cid += 1
+
+        gc[idx].add_beam()
+
+        for lb in self.labels :
+            gc = lb.add_label(gc, idx)
+
+            
+            
+    def set_pixel_first(self):
+        """ put the dataset with a pixel range in the first position
+        """
+        idx = 0
+        dp = self.datasets
+
+        for d in dp:
+            if d.dtype == 'pixel':
+                if idx != 0 :
+                    tmp = dp[0]
+                    dp[0] = d
+                    dp[idx] = tmp
+                    self.datasets = dp
+                    break
+
+            idx += 1
+
+    
+
+            
+class View(object) :
+    """ Create a view
+    """
+    def __init__(self, cnfg) :
+        if 'type' in cnfg:
+            self.vtype = cnfg['type']
+
+        if self.vtype == 'radius' :
+            if 'radius' in cnfg:
+                self.radius = cnfg['radius']
+
+        elif self.vtype == 'box' :
+            if 'box' in cnfg:
+                self.box = cnfg['box']
+
+        if 'center' in cnfg:
+            self.center = cnfg['center']
+        else :
+            self.center = None
+
+            
+
+    def set_view(self, gp, idx):
+        """set the view of the panel
+        """
+        if self.vtype == 'radius' :
+            gp[idx].recenter(self.center[0], self.center[1],
+                             radius=self.radius)
+
+        elif sef.vtype == 'box' :
+            gp[idx].recenter(self.center[0], self.center[1],
+                             height=self.box[0], width=self.box[1])
+
+
+
+            
+class Dataset(object) :
+    """ create a dataset object
+    """
+    def __init__(self, cnfg, name):
+
+        self.name = name
+
+        
+        if 'filename' in cnfg:
+            self.filename = cnfg['filename']
+
+        if 'dims' in cnfg:
+            self.dims = cnfg['dims']
+        else :
+            self.dims = [0,1]
+
+        if 'type' in cnfg:
+            self.dtype = cnfg['type']
+
+            if self.dtype == 'pixel' :
+                if 'pixrange' in cnfg:
+                    self.pixrange = Pixrange(cnfg['pixrange'])
+                
+            elif self.dtype == 'cntr' or self.dtype == 'contour':
+                if 'contours' in cnfg:
+                    self.cntr = Cntr(cnfg['contours'])
+
+
+    def get_reference(self):
+        """ read the reference position of the datasetfrom the FITS
+            header
+        """
+        hdulist = fits.open(self.filename)
+        w = wcs.WCS(hdulist[0].header)
+
+        center = (w.wcs.crval[0], w.wcs.crval[1])
+        return center
+
+    
+
+    def show(self, gc, idx) :
+        """ show the dataset
+            It takes into account whether it is a pixel map or a contour
+            map
+        """
+        if self.dtype == 'pixel' :
+            self.show_colorscale(gc, idx)
+        elif self.dtype == 'cntr' :
+            self.show_contour(gc, idx)
+
+
+            
+    def show_colorscale(self, gc, idx) :
+        """ show a colorscale of the dataset
+        """
+        gc[idx].show_colorscale(vmin=self.pixrange.range[0],
+                                vmax=self.pixrange.range[1],
+                                stretch=self.pixrange.stretch,
+                                cmap=self.pixrange.colormap,
+                                aspect='auto')
+
+
+        
+    def show_contour(self, gc, idx) :
+        """ show a contour map of the dataset
+        """
+        gc[idx].show_contour(self.filename,
+                             levels=self.cntr.levels,
+                             colors=self.cntr.colors)
+                             #linestyles=linestyle,
+                             #linewidths=linewidth)
+        
+
+                    
+class Pixrange(object):
+    """ create a pixrange
+    """
+    def __init__(self, cnfg):
+        if 'base' in cnfg:
+            base = np.float(cnfg['base'])
+        else :
+            base = 1.
+
+        if 'colormap' in cnfg:
+            self.colormap = cnfg['colormap']
+        else :
+            self.colormap = 'inferno'
+
+        if 'range' in cnfg:
+            cfgrange = cnfg['range']
+            pixrange = [float(i) for i in cfgrange[0:2]]
+
+            if np.shape(cfgrange)[0] == 3 :
+                self.stretch = cfgrange[2]
+            else :
+                self.stretch = 'linear'
+
+            self.range = [ fi * base for fi in pixrange]
+            
+
+            
+class Cntr(object):
+    """ create contours
+    """
+    def __init__(self,cnfg) :
+        if 'base' in cnfg:
+            base = float(cnfg['base'])
+        else :
+            base = 1.
+
+        if 'colors' in cnfg:
+            self.colors = cnfg['colors']
+        else :
+            self.colors = 'black'
+
+        if 'levels' in cnfg:
+            sc_levels = [(float(i) * base) for i in cnfg['levels']]
+            
+            if not hasattr(self, 'levels') :
+                self.levels = sc_levels
+
+            else:
+                prev = self.levels
+                prev.append(sc_levels)
+                prev.sort()
+                self.levels = prev
+
+        if 'gen_levels' in cnfg:
+            lev_range = [(float(i) * base) for i in cnfg['gen_levels']]
+
+            lv = lev_range[0]
+            inc = lev_range[2]
+            
+            if not hasattr(self, 'levels'):
+                levs = []
+                while np.sign(inc) * (lev_range[1] - lv) > -1e-10 :
+                    levs.append(lv)
+                    lv += inc
+
+                self.levels = levs
+
+            else :
+                prev = self.levels
+                while np.sign(inc) * (lev_range[1] - lv) > -1e-10 :
+                    prev.append(lv)
+                    lv += inc
+
+                prev.sort()
+                self.levels = prev
+
+
+
 
 class Label(object):
-
+    """ create a label
+    """
     def __init__(self, cfg):
         if 'text' in cfg :
             self.text = cfg['text']
         else :
             self.text =""
 
-        if 'text' in cfg:
+        if 'relative' in cfg:
             self.relative = cfg['relative']
         else :
             self.relative = True
@@ -58,6 +421,10 @@ class Label(object):
         else :
             self.style = 'normal'
 
+        if 'props' in cfg:
+            self.props = cfg['props']
+                             
+
 
     def add_label(self, pp, idx) :
         pp[idx].add_label(self.position[0], self.position[1],
@@ -71,119 +438,47 @@ class Label(object):
 
         
 ##-- Functions ---------------------------------------------------------
+##
 
-def add_panel(xx, pstn, xcfg, idx) :
-    """ Add a new panel
+def read_configuration_file(file):
+    """ Read the YAML configuration_file file
     """
+    print("  + reading configuration file:", file, "...")
 
-    ini_panel = False
-    pxflg = False
-    ctrflg = False
-    
-    dataset_str = [k for k in xcfg if 'dataset' in k]
-    for dset in dataset_str:
-        dset_cfg =  xcfg[dset]
-
-        ctrset = []
+    with open(file, 'r') as ymlfile:
+        try:
+            cnfg = yaml.safe_load(ymlfile)
+        except yaml.YAMLError as exc:
+            print(exc)
         
-        if dset_cfg['type'] == 'pixel' :
-            pixset = dset
+    # modify figure keyword
+    #
+    if 'figure' in cnfg :
+        cnfg['global'] = cnfg['figure']
+        del cnfg['figure']
+    else :
+        cnfg['global'] = {}
 
-            if not pxflg :
-                pxflg = True
-            else :
-                print(" ERROR: two pixel datasets cannot be defined"
-                      "simultaneously")
-                
-        elif dset_cfg['type'] == 'cntr':
-            ctrset.append(dset)
-            ctrflg = True
-
-        else :
-            print(" **ERROR: plotting option unknown for ", dset)
-
-            
-    if pxflg :
-        xx, ini_panel = add_dataset(xx, pstn, xcfg, idx, pixset, ini_panel)
-
-    if ctrflg:
-        for ctr in ctrset :
-            xx, ini_panel = add_dataset(xx, pstn, xcfg, idx, ctr, ini_panel)
-
-
-    if 'labels' in xcfg:
-        it_lab = [k for k in xcfg['labels'] if 'lab' in k]
-
-        for lab in it_lab:
-            l = Label(xcfg['labels'][lab])
-            xx = l.add_label(xx, idx)
-
-            
-    return xx
+    return cnfg
 
 
 
-def add_dataset(xx, pos, dcfg, idx, data, ini_flag) :
-    """ Add a new dataset to a panel
+def process_config(config) :
+    """ process the configuration file config
     """
-    fname = dcfg[data]['filename']
-    dims = dcfg[data]['dims']
-    pltype = dcfg[data]['type']
 
-    if not ini_flag :
-        hdulist = fits.open(fname)
-        #print(hdulist.info())
-        w = wcs.WCS(hdulist[0].header)
+    cfg = read_configuration_file(config)
 
-        center = (w.wcs.crval[0], w.wcs.crval[1])
+    if 'global' in cfg:
+        G = General(cfg['global'])
+    else :
+        G = General()
 
-    
-        xx.append(aplpy.FITSFigure(fname,
-                                   figure=fig,
-                                   subplot=pos,
-                                   dimensions=dims))
+    if 'panels' in cfg:
+        P = DbxFig(cfg['panels'], G.xy)
 
-        if 'view' in dcfg :
-            xx[idx].recenter(center[0], center[1],
-                             dcfg['view']['radius'])
+    return G, P
 
-        ini_flag = True
-
-
-    if pltype == 'pixel':
-        colmap = 'inferno'
-        xx[idx].show_colorscale(vmin=-7e-6, vmax=7e-5,
-                                stretch='linear',
-                                cmap=colmap,
-                                aspect='auto')
-
-    elif pltype == 'cntr' :
-        linecolor = 'white'
-        linestyle = None
-        linewidth = 1
-        if 'cntr_props' in dcfg[data] :
-            if 'color' in dcfg[data]['cntr_props']:
-                linecolor = dcfg[data]['cntr_props']['color']
-            if 'style' in dcfg[data]['cntr_props']:
-                linestyle = dcfg[data]['cntr_props']['style']
-            if 'width' in dcfg[data]['cntr_props']:
-                linewidth = dcfg[data]['cntr_props']['width']
-
-                
-        xx[idx].show_contour(fname, levels=[-2e-5, 1e-5,2e-5, 3e-5, 4e-5, 5e-5,
-                                     6e-5],
-                             colors=linecolor,
-                             linestyles=linestyle,
-                             linewidths=linewidth)
-            
-        # TODO
-        # check if in every panel
-        # do not draw it if it is the same
-        # how to plot several beams
-        #
-    xx[idx].add_beam()
-
-    return (xx, ini_flag)
 
 
 ##-- End of functions --------------------------------------------------
@@ -193,11 +488,11 @@ def add_dataset(xx, pos, dcfg, idx, data, ini_flag) :
 ## defaults
 #
 config_file = 'plot_cfg.yml'
-#configFilePath = (os.path.join(os.getcwd(), config_file))
-#rint("b", configFilePath)
-matplotlib.use('Agg')
 
 print(" Starting...")
+
+matplotlib.use('Agg')
+
 
 
 parser = argparse.ArgumentParser()
@@ -215,63 +510,42 @@ wkdir = args.work_dir
 outdir = args.output_dir
 logfile = args.log
 
-print("  + reading configuration file:", config_file, "...")
 
-with open(config_file, 'r') as ymlfile:
-    try:
-        cfg = yaml.safe_load(ymlfile)
-    except yaml.YAMLError as exc:
-        print(exc)
+General, Panels = process_config(config_file)
 
-
-        
-#for section in cfg:
-#    if section == 'figure':
-#        print(cfg[section].keys())
-#    elif section == 'panels':
-#        print(cfg[section].keys())
-#    print(section)
-#    print(cfg[section])
-#    for sub in cfg[section]:
-#        print(sub)
-#        print(cfg[section][sub])
-
-cfg['global'] = cfg['figure']
-del cfg['figure']
-
-#process cfg
 
 
 gc = []
 
-panel_idx = 0
+
 
 
 # figure definition
 #
-fig = plt.figure(figsize=(cfg['global']['size']))
+fig = General.create()
 
+a = Panels.add_panels(fig, gc)
 
-panel_str = [k for k in cfg['panels'] if 'panel' in k]
+#panel_str = [k for k in cfg['panels'] if 'panel' in k]
 
 #defined_panels = np.shape(panel_str)[0]
 
 # what to do if defined_panels is different than numpanels
 
-for panel in panel_str:
+#for panel in panel_str:
 
-    print("  + adding panel:", panel, "...")
+#    print("  + adding panel:", panel, "...")
     
-    position = (cfg['global']['xy'][0], cfg['global']['xy'][1], panel_idx+1)
+#    position = (General.xy[0], General.xy[1], panel_idx+1)
 
-    panel_cfg = cfg['panels'][panel]
+#    panel_cfg = cfg['panels'][panel]
 
-    gc = add_panel(gc, position, panel_cfg, panel_idx)
+#    gc = add_panel(gc, position, panel_cfg, panel_idx)
 
-    panel_idx += 1
+#    panel_idx += 1
 
 
-ofile = cfg['global']['outfile']
-print("  + plotting output file:", ofile, "...")
-gc[0].save(ofile, dpi=cfg['global']['dpi'])
+#General.print(gc)
+print("  + plotting output file:", General.outfile, "...")
+gc[0].save(General.outfile, dpi=General.dpi)
 
