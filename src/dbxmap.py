@@ -60,8 +60,9 @@ class General(object):
 
     
 
+        
 class DbxFig(object):
-    """ define the elements of the figure
+    """ Class defining the elements of the figure
     """
     def __init__(self,cnfg, xy):
 
@@ -70,6 +71,19 @@ class DbxFig(object):
         # self.contours
         # self.pixrange
 
+
+        #if 'view' in cnfg:
+
+        #if 'labels' in cnfg:
+
+        if 'pixrange' in cnfg:
+            self.pixrange = Pixrange(cnfg['pixrange'],self)
+
+        if 'contours' in cnfg:
+            self.contour = Contour(cnfg['contours'], self)
+
+
+            
         panel_list = []
     
         panel_str = [k for k in cnfg if 'panel' in k]
@@ -81,7 +95,7 @@ class DbxFig(object):
             for panel in panel_str:
 
                 print("  + adding panel:", panel, "...")
-                panel_list.append(Panel(cnfg[panel], panel, xy, p_idx))
+                panel_list.append(Panel(cnfg[panel], panel, xy, p_idx, self))
                 p_idx += 1
 
             self.panels = panel_list
@@ -107,7 +121,7 @@ class DbxFig(object):
 class Panel(object) :
     """ Create a panel
     """ 
-    def __init__(self, cnfg, name, xy, idx):
+    def __init__(self, cnfg, name, xy, idx, parent):
 
         # self.contours
         # self.pixrange
@@ -143,7 +157,7 @@ class Panel(object) :
 
         if dataset_str :
             for d in dataset_str:
-                dataset_list.append(Dataset(cnfg[d], d))
+                dataset_list.append(Dataset(cnfg[d], d, parent))
                 
             self.datasets = dataset_list
         else:
@@ -241,7 +255,7 @@ class View(object) :
 class Dataset(object) :
     """ create a dataset object
     """
-    def __init__(self, cnfg, name):
+    def __init__(self, cnfg, name, parent):
 
         self.name = name
 
@@ -259,12 +273,21 @@ class Dataset(object) :
 
             if self.dtype == 'pixel' :
                 if 'pixrange' in cnfg:
-                    self.pixrange = Pixrange(cnfg['pixrange'])
-                
+                    self.pixrange = Pixrange(cnfg['pixrange'], parent)
+                elif hasattr(parent, 'pixrange'):
+                    self.pixrange = Pixrange(None, parent)
+                else :
+                    raise Exception('Error: pixrange is not defined anywhere')
+                    
             elif self.dtype == 'cntr' or self.dtype == 'contour':
                 if 'contours' in cnfg:
-                    self.cntr = Cntr(cnfg['contours'])
+                    self.contour = Contour(cnfg['contours'], parent)
+                elif hasattr(parent, 'contour'):
+                    self.contour = Contour(None, parent)
+                else :
+                    raise Exception('Error: contour is not defined anywhere')
 
+                
 
     def get_reference(self):
         """ read the reference position of the datasetfrom the FITS
@@ -305,8 +328,8 @@ class Dataset(object) :
         """ show a contour map of the dataset
         """
         gc[idx].show_contour(self.filename,
-                             levels=self.cntr.levels,
-                             colors=self.cntr.colors)
+                             levels=self.contour.levels,
+                             colors=self.contour.colors)
                              #linestyles=linestyle,
                              #linewidths=linewidth)
         
@@ -315,46 +338,79 @@ class Dataset(object) :
 class Pixrange(object):
     """ create a pixrange
     """
-    def __init__(self, cnfg):
-        if 'base' in cnfg:
+    def __init__(self, cnfg, parent):
+
+        if cnfg != None and 'base' in cnfg:
             base = np.float(cnfg['base'])
         else :
-            base = 1.
+            try:
+                self.base = parent.pixrange.base
 
-        if 'colormap' in cnfg:
+            except AttributeError:
+                base = 1.
+
+        if cnfg != None and 'colormap' in cnfg:
             self.colormap = cnfg['colormap']
-        else :
-            self.colormap = 'inferno'
+            
+        else:
+            try:
+                self.colormap = parent.pixrange.colormap
 
-        if 'range' in cnfg:
+            except AttributeError:
+                self.colormap = 'inferno'
+
+        if cnfg != None and 'range' in cnfg:
             cfgrange = cnfg['range']
             pixrange = [float(i) for i in cfgrange[0:2]]
 
             if np.shape(cfgrange)[0] == 3 :
                 self.stretch = cfgrange[2]
+
             else :
                 self.stretch = 'linear'
 
             self.range = [ fi * base for fi in pixrange]
-            
+        else :
+            try:
+                self.range = parent.pixrange.range
+
+            except AttributeError:
+                pass
+
+            try:
+                self.stretch = parent.pixrange.stretch
+
+            except AttributeError:
+                pass
+
 
             
-class Cntr(object):
+class Contour(object):
     """ create contours
     """
-    def __init__(self,cnfg) :
-        if 'base' in cnfg:
-            base = float(cnfg['base'])
-        else :
-            base = 1.
+    def __init__(self,cnfg, parent) :
 
-        if 'colors' in cnfg:
+        if cnfg != None and 'base' in cnfg:
+            self.base = float(cnfg['base'])
+        else :
+            try:
+                self.base = parent.contour.base
+
+            except AttributeError:
+                self.base = 1.
+
+
+        if cnfg != None and 'colors' in cnfg:
             self.colors = cnfg['colors']
         else :
-            self.colors = 'black'
+            try:
+                self.colors = parent.contour.colors
 
-        if 'levels' in cnfg:
-            sc_levels = [(float(i) * base) for i in cnfg['levels']]
+            except AttributeError :
+                self.colors = 'black'
+
+        if cnfg != None and 'levels' in cnfg:
+            sc_levels = [(float(i) * self.base) for i in cnfg['levels']]
             
             if not hasattr(self, 'levels') :
                 self.levels = sc_levels
@@ -364,8 +420,16 @@ class Cntr(object):
                 prev.append(sc_levels)
                 prev.sort()
                 self.levels = prev
+        else:
+            try:
+                self.levels = parent.contour.levels
+                if self.base != 1 :
+                    self.levels = [(i * self.base) for i in self.levels]
+                
+            except:
+                pass
 
-        if 'gen_levels' in cnfg:
+        if cnfg != None and 'gen_levels' in cnfg:
             lev_range = [(float(i) * base) for i in cnfg['gen_levels']]
 
             lv = lev_range[0]
@@ -518,10 +582,7 @@ logfile = args.log
 General, Panels = process_config(config_file)
 
 
-
 gc = []
-
-
 
 
 # figure definition
@@ -531,6 +592,5 @@ fig = General.create()
 a = Panels.add_panels(fig, gc)
 
 General.f_print(gc)
-#print("  + plotting output file:", General.outfile, "...")
-#gc[0].save(General.outfile, dpi=General.dpi)
+
 
