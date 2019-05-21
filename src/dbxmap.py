@@ -72,7 +72,8 @@ class DbxFig(object):
         # self.pixrange
 
 
-        #if 'view' in cnfg:
+        if 'view' in cnfg:
+            self.view = View(cnfg['view'], self)
 
         #if 'labels' in cnfg:
 
@@ -137,8 +138,11 @@ class Panel(object) :
 
             
         if 'view' in cnfg:
-            self.view = View(cnfg['view'])
+            self.view = View(cnfg['view'], parent)
 
+        elif hasattr(parent, 'view'):
+            self.view = View(None, parent)
+            
             
         if 'labels' in cnfg:
 
@@ -219,22 +223,45 @@ class Panel(object) :
 class View(object) :
     """ Create a view
     """
-    def __init__(self, cnfg) :
-        if 'type' in cnfg:
+    def __init__(self, cnfg, parent) :
+        if cnfg != None and 'type' in cnfg:
             self.vtype = cnfg['type']
+        else :
+            try:
+                self.vtype = parent.view.vtype
+                
+            except AttributeError:
+                self.vtype = None
 
         if self.vtype == 'radius' :
-            if 'radius' in cnfg:
+            if cnfg != None and 'radius' in cnfg:
                 self.radius = cnfg['radius']
 
-        elif self.vtype == 'box' :
-            if 'box' in cnfg:
-                self.box = cnfg['box']
+            else:
+                try:
+                    self.radius = parent.view.radius
+                except AttributeError:
+                    self.radius = None
 
-        if 'center' in cnfg:
+        elif self.vtype == 'box' :
+            if cnfg != None  and 'box' in cnfg:
+                self.box = cnfg['box']
+            else :
+                try:
+                    self.box = parent.view.box
+                except AttributeError:
+                    self.box = None
+
+        
+            
+
+        if cnfg != None and 'center' in cnfg:
             self.center = cnfg['center']
         else :
-            self.center = None
+            try:
+                self.center = parent.view.center
+            except: 
+                self.center = None
 
             
 
@@ -341,13 +368,13 @@ class Pixrange(object):
     def __init__(self, cnfg, parent):
 
         if cnfg != None and 'base' in cnfg:
-            base = np.float(cnfg['base'])
+            self.base = np.float(cnfg['base'])
         else :
             try:
                 self.base = parent.pixrange.base
 
             except AttributeError:
-                base = 1.
+                self.base = 1.
 
         if cnfg != None and 'colormap' in cnfg:
             self.colormap = cnfg['colormap']
@@ -361,7 +388,8 @@ class Pixrange(object):
 
         if cnfg != None and 'range' in cnfg:
             cfgrange = cnfg['range']
-            pixrange = [float(i) for i in cfgrange[0:2]]
+
+            self.range = [(float(i) * self.base) for i in cfgrange[0:2]]
 
             if np.shape(cfgrange)[0] == 3 :
                 self.stretch = cfgrange[2]
@@ -369,7 +397,6 @@ class Pixrange(object):
             else :
                 self.stretch = 'linear'
 
-            self.range = [ fi * base for fi in pixrange]
         else :
             try:
                 self.range = parent.pixrange.range
