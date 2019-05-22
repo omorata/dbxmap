@@ -47,7 +47,7 @@ class Page(object):
     def create(self) :
         """ create figure
         """
-        f = plt.figure(figsize=(self.size))
+        f = plt.figure(figsize=(self.size), constrained_layout=True)
         return f
 
 
@@ -346,7 +346,7 @@ class Dataset(object) :
                                 vmax=self.pixrange.range[1],
                                 stretch=self.pixrange.stretch,
                                 cmap=self.pixrange.colormap,
-                                aspect='auto')
+                                aspect='equal')
 
 
         
