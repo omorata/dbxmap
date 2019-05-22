@@ -5,14 +5,14 @@
 ##
 ## Tool to plot maps
 ##
-
+##
 import argparse
 
 import matplotlib
 import matplotlib.pyplot as plt
 import aplpy
-import numpy as np
 
+import numpy as np
 from astropy import wcs
 from astropy.io import fits
 
@@ -42,13 +42,19 @@ class Page(object):
         else :
             self.size = [10,10]
 
+            
 
     def create(self) :
+        """ create figure
+        """
         f = plt.figure(figsize=(self.size))
         return f
 
-    
+
+
     def f_print(self, gc):
+        """ print figure
+        """
         print("  + plotting output file:", self.outfile, "...")
         gc[0].save(self.outfile, dpi=self.dpi)
 
@@ -86,18 +92,20 @@ class DbxFig(object):
             p_idx = 0
             
             for panel in panel_str:
-
                 print("  + adding panel:", panel, "...")
                 panel_list.append(Panel(cnfg[panel], panel, p_idx, self))
                 p_idx += 1
 
             self.panels = panel_list
-            
-
+        
         else:
             self.panels = []
 
-            
+
+
+
+
+
     def add_panels(self, fig):
 
         p_idx = 0
@@ -352,7 +360,8 @@ class Dataset(object) :
                              #linewidths=linewidth)
         
 
-                    
+
+
 class Pixrange(object):
     """ create a pixrange
     """
@@ -525,12 +534,12 @@ class Label(object):
 ##-- Functions ---------------------------------------------------------
 
 
-def read_configuration_file(file):
+def read_configuration_file(cfgfile):
     """ Read the YAML configuration file
     """
-    print("  + reading configuration file:", file, "...")
+    print("  + reading configuration file:", cfgfile, "...")
 
-    with open(file, 'r') as ymlfile:
+    with open(cfgfile, 'r') as ymlfile:
         try:
             cnfg = yaml.safe_load(ymlfile)
         except yaml.YAMLError as exc:
@@ -599,7 +608,7 @@ if __name__ == "__main__" :
 
     print(" Starting...")
 
-    matplotlib.use('Agg')
+    #matplotlib.use('Agg')
 
     
     args = read_command_line()
@@ -608,7 +617,7 @@ if __name__ == "__main__" :
     files = {'config' : args.config}
 
     if args.log != None:
-        files['log']
+        files['log'] = args.log
 
     # process the configuration
     #
