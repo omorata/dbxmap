@@ -42,23 +42,36 @@ class Page(object):
         else :
             self.size = [10,10]
 
-            
+        if 'name' in cnfg:
+            self.name = cnfg['name']
 
+
+            
     def create(self) :
         """ create figure
         """
-        f = plt.figure(figsize=(self.size))
-        return f
+        self.f = plt.figure(figsize=(self.size))
+        return self.f
 
 
 
-    def f_print(self, gc):
+    def f_print(self):
         """ print figure
         """
         print("  + plotting output file:", self.outfile, "...")
-        gc[0].save(self.outfile, dpi=self.dpi)
+        self.f.savefig(self.outfile, dpi=self.dpi)
 
+
+
+    def end(self):
+        """ ending comment
+        """
+        if hasattr(self, 'name') :
+            print("\n  ... figure <<", self.name, ">> done!\n")
+        else :
+            print("\n  ... done!\n")
     
+
 
         
 class DbxFig(object):
@@ -104,21 +117,16 @@ class DbxFig(object):
 
 
 
-
-
-
     def add_panels(self, fig):
 
         p_idx = 0
         gc = []
         
         for p in self.panels :
-            print("  + plotting panel:", p.name)
+            print("  + plotting panel:", p.name, "...")
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
             
-        return gc
-
 
     
             
@@ -182,10 +190,11 @@ class Panel(object) :
                 if vw.center == None:
                     vw.center = d.get_reference()
 
+                
                 gc.append(aplpy.FITSFigure(d.filename,
-                                   figure=fig,
-                                   subplot=self.position,
-                                   dimensions=d.dims))
+                                           figure=fig,
+                                           subplot=self.position,
+                                           dimensions=d.dims))
 
                 vw.set_view(gc, idx)
 
@@ -322,6 +331,7 @@ class Dataset(object) :
         """
         hdulist = fits.open(self.filename)
         w = wcs.WCS(hdulist[0].header)
+
 
         center = (w.wcs.crval[0], w.wcs.crval[1])
         return center
@@ -546,8 +556,6 @@ def read_configuration_file(cfgfile):
         except yaml.YAMLError as exc:
             print(exc)
         
-    with open('data.yml', 'a+') as outfile:
-        yaml.dump(cnfg, outfile, default_flow_style=False)
     return cnfg
 
 
@@ -610,7 +618,6 @@ if __name__ == "__main__" :
     print(" Starting...")
 
     #matplotlib.use('Agg')
-
     
     args = read_command_line()
 
@@ -630,9 +637,9 @@ if __name__ == "__main__" :
 
     fig = Page.create()
 
-    gc = Panels.add_panels(fig)
+    Panels.add_panels(fig)
 
-    Page.f_print(gc)
-
+    Page.f_print()
+    Page.end()
     
 ##-- End of main -------------------------------------------------------
