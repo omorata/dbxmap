@@ -30,7 +30,7 @@ class Page(object):
         if 'outfile' in cnfg:
             self.outfile = os.path.join(dirs['outdir'], cnfg['outfile'])
         else :
-            self.outfile = './outfile.pdf'
+            self.outfile = os.path.join(dirs['outdir'], 'outfile.pdf')
 
         if 'dpi' in cnfg :
             self.dpi = cnfg['dpi']
@@ -77,7 +77,7 @@ class Page(object):
 class DbxFig(object):
     """ Class defining the elements of the figure
     """
-    def __init__(self, cnfg):
+    def __init__(self, cnfg, dirs):
 
         # self.labels
 
@@ -98,6 +98,7 @@ class DbxFig(object):
         if 'contours' in cnfg:
             self.contour = Contour(cnfg['contours'], self)
 
+        self.wd = dirs['wkdir']
 
         panel_str = [k for k in cnfg if 'panel' in k]
 
@@ -297,7 +298,7 @@ class Dataset(object) :
 
         
         if 'filename' in cnfg:
-            self.filename = cnfg['filename']
+            self.filename = os.path.join(parent.wd, cnfg['filename'])
 
         if 'dims' in cnfg:
             self.dims = cnfg['dims']
@@ -585,7 +586,7 @@ def process_config(ifiles, dirs) :
         G = Page()
 
     if 'panels' in cfg:
-        P = DbxFig(cfg['panels'])
+        P = DbxFig(cfg['panels'], dirs)
 
     return G, P
 
@@ -613,7 +614,7 @@ def read_command_line() :
 if __name__ == "__main__" :
     ## defaults
     #
-    config_file = 'plot_cfg.yml'
+    #config_file = 'plot_cfg.yml'
 
     print(" Starting...")
 
@@ -624,7 +625,7 @@ if __name__ == "__main__" :
     dirs = {'wkdir' : args.work_dir, 'outdir' : args.output_dir}
     files = {'config' : args.config}
 
-    if args.log != None:
+    if args.log is not None:
         files['log'] = args.log
 
     # process the configuration
