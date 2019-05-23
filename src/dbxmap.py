@@ -47,7 +47,7 @@ class Page(object):
     def create(self) :
         """ create figure
         """
-        f = plt.figure(figsize=(self.size), constrained_layout=True)
+        f = plt.figure(figsize=(self.size))
         return f
 
 
@@ -68,15 +68,16 @@ class DbxFig(object):
 
         # self.labels
 
-        if 'xy' in cnfg:
-            self.xy = cnfg['xy']
+        if 'yx' in cnfg:
+            self.yx = cnfg['yx']
         else:
-            self.xy = [1,1]
+            self.yx = [1,1]
 
         if 'view' in cnfg:
             self.view = View(cnfg['view'], self)
 
         #if 'labels' in cnfg:
+        #    self.labels = Label(cnfg['labels'], self)
 
         if 'pixrange' in cnfg:
             self.pixrange = Pixrange(cnfg['pixrange'], self)
@@ -133,7 +134,7 @@ class Panel(object) :
             cpos = cnfg['position']
             self.position = (cpos[0], cpos[1], cpos[2])
         else:
-            self.position = (parent.xy[0], parent.xy[1], idx+1)
+            self.position = (parent.yx[0], parent.yx[1], idx+1)
 
             
         if 'view' in cnfg:
