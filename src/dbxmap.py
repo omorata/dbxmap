@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 ##
-## dbxmap.py
-## O. Morata 2019
+##  dbxmap.py
 ##
-## Tool to plot maps
+##  O. Morata 2019-2020
+##
+##   Tool to plot maps using Aplpy
 ##
 ##
 import argparse
 
-import matplotlib
 import matplotlib.pyplot as plt
 import aplpy
 
 import numpy as np
 from astropy import wcs
-from astropy.io import fits
+from astropy.io import ascii, fits
+import astropy.coordinates as coord
+from astropy import units as u
 
 import yaml
 
@@ -81,6 +83,8 @@ class DbxFig(object):
 
         # self.labels
 
+        self.wkdir = dirs['wkdir']
+        
         if 'yx' in cnfg:
             self.yx = cnfg['yx']
         else:
@@ -88,6 +92,9 @@ class DbxFig(object):
 
         if 'view' in cnfg:
             self.view = View(cnfg['view'], self)
+
+        if 'markers' in cnfg:
+            self.markers = Markers(cnfg['markers'], self)
 
         #if 'labels' in cnfg:
         #    self.labels = Label(cnfg['labels'], self)
@@ -164,6 +171,11 @@ class Panel(object) :
             self.labels = []
 
             
+        if 'markers' in cnfg:
+            self.markers = Markers(cnfg['markers'], parent)
+        elif hasattr(parent, 'markers'):
+            self.markers = Markers(None, parent)
+
         dataset_list = []
 
         dataset_str = [k for k in cnfg if 'dataset' in k]
@@ -203,10 +215,14 @@ class Panel(object) :
 
             cid += 1
 
-        gc[idx].add_beam()
+        #gc[idx].add_beam()
 
         for lb in self.labels :
             gc = lb.add_label(gc, idx)
+
+        if hasattr(self, 'markers') :
+            a = self.markers
+            a.add_markers(gc, idx)
 
             
             
@@ -335,6 +351,7 @@ class Dataset(object) :
 
 
         center = (w.wcs.crval[0], w.wcs.crval[1])
+        #print(center,"-----")
         return center
 
     
@@ -540,7 +557,97 @@ class Label(object):
 
         return pp
 
-    
+
+
+                                   
+class Markers(object) :
+
+    def __init__ (self, cnfg, parent):
+
+        self.wkdir = parent.wkdir
+        
+        if hasattr(parent, 'markers'):
+            self.marklist = parent.markers.marklist
+            list_markers = self.marklist
+        else:
+            list_markers = []
+                                                                      
+        if cnfg != None :
+            file_str = [k for k in cnfg if 'file' in k]
+
+            if file_str :
+
+                for files in file_str :
+                    fname = os.path.join(self.wkdir, cnfg[files])
+                    list_markers.append(self.read_markers(fname))
+
+                self.marklist = list_markers
+                    
+            else :
+                self.marklist = None
+                
+        #print("------>", self.marklist)
+
+
+
+    def add_markers(self, gc, i):
+
+        lmarkers = self.marklist
+
+        for mk in lmarkers:
+            
+            gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
+                               edgecolor=mk[0]['color'],
+                               c=mk[0]['filled'],
+                               linewidths=mk[0]['linewidth'],
+                               s=mk[0]['size'],
+                               marker='$+$')
+
+
+
+            
+    def read_markers(self, fname):
+        """ reads a markers file
+        """
+
+        tbl = ascii.read(fname, delimiter=" ", format="basic")
+
+        mark_list = []
+        for marker in tbl:
+
+            if marker[0] == "cross" :
+                props = Markers.check_cross(marker)
+                if props != None :
+                    mark_list.append(props)
+
+        return mark_list
+
+                    
+    @staticmethod
+    def check_cross(it) :
+        """ check configuration of a cross marker
+        """
+        if len(it) != 8 :
+            print("Wrong number of elements in cross marker")
+            return None
+        else :
+            attribs = {'sym' : (4,1,0),
+                       'size': float(it[4]),
+                       'linewidth' : float(it[5]),
+                       'color' : it[6]
+            }
+            if it[1] == "abs" :
+                attribs["x"] = coord.Angle(it[2], unit=u.hour)
+                attribs["y"] = coord.Angle(it[3], unit=u.degree)
+
+            if it[7] == "y" :
+                attribs['filled'] = it[6]
+            else :
+                attribs['filled'] = 'none'
+                
+            return attribs
+
+        
 ##-- End of class definitions ------------------------------------------
         
 ##-- Functions ---------------------------------------------------------
@@ -618,7 +725,7 @@ if __name__ == "__main__" :
 
     print(" Starting...")
 
-    #matplotlib.use('Agg')
+    matplotlib.use('Agg')
     
     args = read_command_line()
 
