@@ -22,6 +22,12 @@ import yaml
 
 import os
 
+import matplotlib
+
+
+# allow use of LaTex in the texts
+#
+matplotlib.rcParams['text.usetex'] = True
 
 ##-- Class definitions -------------------------------------------------
 
@@ -105,6 +111,7 @@ class DbxFig(object):
         if 'contours' in cnfg:
             self.contour = Contour(cnfg['contours'], self)
 
+            
         self.wd = dirs['wkdir']
 
         panel_str = [k for k in cnfg if 'panel' in k]
@@ -134,9 +141,9 @@ class DbxFig(object):
             print("  + plotting panel:", p.name, "...")
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
-            
 
-    
+
+            
             
 class Panel(object) :
     """ Create a panel
@@ -161,7 +168,6 @@ class Panel(object) :
             
             
         if 'labels' in cnfg:
-
             label_list = []
             for l in cnfg['labels'] :
                 label_list.append(Label(cnfg['labels'][l]))
@@ -176,6 +182,9 @@ class Panel(object) :
         elif hasattr(parent, 'markers'):
             self.markers = Markers(None, parent)
 
+        if 'colorbar' in cnfg:
+            self.colorbar = Colorbar(cnfg['colorbar'], self)
+            
         dataset_list = []
 
         dataset_str = [k for k in cnfg if 'dataset' in k]
@@ -225,7 +234,11 @@ class Panel(object) :
             a.add_markers(gc, idx)
 
             
+        if hasattr(self, 'colorbar'):
+            self.set_colorbar(gc[idx])
+
             
+
     def set_pixel_first(self):
         """ put the dataset with a pixel range in the first position
         """
@@ -243,9 +256,16 @@ class Panel(object) :
 
             idx += 1
 
-    
 
-            
+
+    def set_colorbar(self, pnl) :
+        pnl.add_colorbar()
+        pnl.colorbar.set_width(self.colorbar.width)
+        pnl.colorbar.set_location(self.colorbar.location)
+        pnl.colorbar.set_axis_label_text(self.colorbar.text)
+
+
+        
 class View(object) :
     """ Create a view
     """
@@ -340,8 +360,8 @@ class Dataset(object) :
                 else :
                     raise Exception('Error: contour is not defined anywhere')
 
-                
 
+                
     def get_reference(self):
         """ read the reference position of the datasetfrom the FITS
             header
@@ -384,9 +404,9 @@ class Dataset(object) :
         """
         gc[idx].show_contour(self.filename,
                              levels=self.contour.levels,
-                             colors=self.contour.colors)
-                             #linestyles=linestyle,
-                             #linewidths=linewidth)
+                             colors=self.contour.colors,
+                             linewidths=self.contour.linewidth,
+                             linestyles=self.contour.linestyle)
         
 
 
@@ -441,10 +461,47 @@ class Pixrange(object):
 
 
             
+class Colorbar(object):
+    """creat colorbar"""
+
+    def __init__(self, cnfg, parent) :
+        """Initialization of a colorbar object."""
+        
+        self.add = 'y'
+        
+        if cnfg != None and 'width' in cnfg:
+            self.width = float(cnfg['width'])
+        else :
+            try:
+                self.width = parent.colorbar.width
+
+            except AttributeError:
+                self.width = 0.3
+            
+        if cnfg != None and 'location' in cnfg:
+            self.location = cnfg['location']
+        else :
+            try:
+                self.location = parent.colorbar.location
+
+            except AttributeError:
+                self.location = 'right'
+
+            
+        if cnfg != None and 'text' in cnfg:
+            self.text = cnfg['text']
+        else :
+            try:
+                self.text = parent.colorbar.text
+
+            except AttributeError:
+                self.text = ''
+
+            
 class Contour(object):
-    """ create contours
-    """
-    def __init__(self,cnfg, parent) :
+    """ Create contours."""
+
+    def __init__(self, cnfg, parent) :
 
         if cnfg != None and 'base' in cnfg:
             self.base = float(cnfg['base'])
@@ -508,6 +565,23 @@ class Contour(object):
                 prev.sort()
                 self.levels = prev
 
+        if cnfg != None and 'linewidth' in cnfg:
+            self.linewidth = float(cnfg['linewidth'])
+        else :
+            try:
+                self.linewidth = parent.contour.linewidth
+
+            except AttributeError:
+                self.linewidth = 1.
+                
+        if cnfg != None and 'linestyle' in cnfg:
+            self.linestyle = str(cnfg['linestyle'])
+        else :
+            try:
+                self.linestyle = parent.contour.linestyle
+
+            except AttributeError:
+                self.linestyle = '-'
 
 
 
