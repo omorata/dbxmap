@@ -21,6 +21,7 @@ from astropy import units as u
 import yaml
 
 import os
+import sys
 
 import matplotlib
 
@@ -354,9 +355,10 @@ class Dataset(object) :
                     
             elif self.dtype == 'cntr' or self.dtype == 'contour':
                 if 'contours' in cnfg:
-                    self.contour = Contour(cnfg['contours'], parent)
+                    self.contour = Contour(cnfg['contours'], parent,
+                                           name=self.name)
                 elif hasattr(parent, 'contour'):
-                    self.contour = Contour(None, parent)
+                    self.contour = Contour(None, parent, name=self.name)
                 else :
                     raise Exception('Error: contour is not defined anywhere')
 
@@ -497,12 +499,27 @@ class Colorbar(object):
             except AttributeError:
                 self.text = ''
 
-            
+
+                
 class Contour(object):
-    """ Create contours."""
+    """ Create contours.
+    """
 
-    def __init__(self, cnfg, parent) :
+    tol = 1.e-10
+    
+    def __init__(self, cnfg, parent, name='') :
 
+        self.append_contours = False
+        
+        if cnfg !=None and 'append' in cnfg:
+            if cnfg['append'] == True :
+                self.append_contours = True
+                try :
+                    self.levels = parent.contour.levels.copy()
+                except:
+                    pass
+
+                
         if cnfg != None and 'base' in cnfg:
             self.base = float(cnfg['base'])
         else :
@@ -522,49 +539,53 @@ class Contour(object):
             except AttributeError :
                 self.colors = 'black'
 
-        if cnfg != None and 'levels' in cnfg:
-            sc_levels = [(float(i) * self.base) for i in cnfg['levels']]
-            
-            if not hasattr(self, 'levels') :
-                self.levels = sc_levels
-
-            else:
-                prev = self.levels
-                prev.append(sc_levels)
-                prev.sort()
-                self.levels = prev
-        else:
-            try:
-                self.levels = parent.contour.levels
-                if self.base != 1 :
-                    self.levels = [(i * self.base) for i in self.levels]
                 
-            except:
+        if cnfg != None and 'levels' in cnfg:
+            self.add_levels(self.scale_values(self.base, cnfg['levels']))
+
+            
+        if cnfg != None and 'gen_levels' in cnfg:
+            self.generate_levels(self.scale_values(self.base,
+                                                   cnfg['gen_levels']))
+            
+                
+        if cnfg != None and 'pbase' in cnfg:
+            self.pbase = float(cnfg['pbase'])
+        else :
+            try:
+                self.pbase = parent.contour.pbase
+
+            except AttributeError:
                 pass
 
-        if cnfg != None and 'gen_levels' in cnfg:
-            lev_range = [(float(i) * base) for i in cnfg['gen_levels']]
-
-            lv = lev_range[0]
-            inc = lev_range[2]
             
-            if not hasattr(self, 'levels'):
-                levs = []
-                while np.sign(inc) * (lev_range[1] - lv) > -1e-10 :
-                    levs.append(lv)
-                    lv += inc
+        if cnfg != None and 'plevels' in cnfg:
+            try :
+                self.add_levels(self.scale_values(self.pbase*0.01,
+                                                  cnfg['plevels']))
 
-                self.levels = levs
+            except AttributeError :
+                print("WARNING: no base defined for percentage levels")
+                pass
 
-            else :
-                prev = self.levels
-                while np.sign(inc) * (lev_range[1] - lv) > -1e-10 :
-                    prev.append(lv)
-                    lv += inc
+            
+        if cnfg != None and 'gen_plevels' in cnfg:
+            try :
+                self.generate_levels(self.scale_values(self.pbase*0.01,
+                                                       cnfg['gen_plevels']))
+                
+            except AttributeError :
+                print("WARNING: no base defined for percentage levels")
+                pass
 
-                prev.sort()
-                self.levels = prev
+        if cnfg != None and 'flevels' in cnfg:
+            self.add_levels(cnfg['flevels'])
 
+            
+        if cnfg != None and 'gen_flevels' in cnfg:
+            self.generate_levels(cnfg['gen_flevels'])
+                
+            
         if cnfg != None and 'linewidth' in cnfg:
             self.linewidth = float(cnfg['linewidth'])
         else :
@@ -584,7 +605,65 @@ class Contour(object):
                 self.linestyle = '-'
 
 
+        if name:
+            if not hasattr(self, 'levels'):
+                try :
+                    self.levels = parent.contour.levels.copy()
+                except:
+                    print("ERROR: no level definition anywhere for the dataset",
+                             name)
+                    sys.exit("Exiting")
 
+                    
+    @staticmethod
+    def scale_values(factor, vlist):
+        """Scales the values in vlist by factor."""
+
+        return [(float(i) * factor) for i in vlist]
+
+        
+    def add_levels(self, new_levels) :
+        """Adds new levels to the current list of levels.
+
+        If the list of levels already existed, it sorts them.
+        Args:
+           new_levels: list of new levels to add
+        """
+        
+        if not hasattr(self, 'levels') :
+            self.levels = new_levels
+
+        else:
+            prev = self.levels
+            prev.extend(new_levels)
+            prev.sort()
+            self.levels = prev
+
+
+    def generate_levels(self, lev_list):
+        """Automatically creates a set of levels and adds them to the
+        list of levels
+
+        Args:
+            lev_list - three element list with the minimum and maximum
+                       values of the range, plus the increment
+        """
+
+        if len(lev_list) != 3 :
+            print("ERROR: wrong number of elements to generate levels")
+            sys.exit(1)
+            
+        lv = lev_list[0]
+            
+        gen_levs = []
+        while np.sign(lev_list[2]) * (lev_list[1] - lv) > -self.tol :
+            gen_levs.append(lv)
+            lv += lev_list[2]
+
+        self.add_levels(gen_levs)
+            
+
+        
 class Label(object):
     """ create a label
     """
