@@ -355,7 +355,8 @@ class Dataset(object) :
                     
             elif self.dtype == 'cntr' or self.dtype == 'contour':
                 if 'contours' in cnfg:
-                    self.contour = Contour(cnfg['contours'], parent, name=self.name)
+                    self.contour = Contour(cnfg['contours'], parent,
+                                           name=self.name)
                 elif hasattr(parent, 'contour'):
                     self.contour = Contour(None, parent, name=self.name)
                 else :
@@ -501,7 +502,8 @@ class Colorbar(object):
 
                 
 class Contour(object):
-    """ Create contours."""
+    """ Create contours.
+    """
 
     tol = 1.e-10
     
@@ -572,15 +574,23 @@ class Contour(object):
                 pass
 
             
-        if cnfg != None and 'pgen_levels' in cnfg:
+        if cnfg != None and 'gen_plevels' in cnfg:
             try :
-                plev_range = [(float(i) * self.pbase * 0.01) for i in cnfg['pgen_levels']]
+                plev_range = [(float(i) * self.pbase * 0.01) for i in
+                              cnfg['gen_plevels']]
                 self.generate_levels(plev_range)
                 
             except AttributeError :
                 print("WARNING: no base defined for percentage levels")
                 pass
 
+        if cnfg != None and 'flevels' in cnfg:
+            self.add_levels(cnfg['flevels'])
+
+            
+        if cnfg != None and 'gen_flevels' in cnfg:
+            self.generate_levels(cnfg['gen_flevels'])
+                
             
         if cnfg != None and 'linewidth' in cnfg:
             self.linewidth = float(cnfg['linewidth'])
@@ -611,10 +621,11 @@ class Contour(object):
                     sys.exit("Exiting")
 
 
+        
     def add_levels(self, new_levels) :
         """Adds new levels to the current list of levels.
 
-        If the list of levels already existed, sorts them.
+        If the list of levels already existed, it sorts them.
         Args:
            new_levels: list of new levels to add
         """
@@ -629,30 +640,30 @@ class Contour(object):
             self.levels = prev
 
 
-    def generate_levels(self, lev_range):
+    def generate_levels(self, lev_list):
         """Automatically creates a set of levels and adds them to the
         list of levels
 
         Args:
-            lev_range - three element list with the minimum and maximum
-                        values of the range, plus the increment
+            lev_list - three element list with the minimum and maximum
+                       values of the range, plus the increment
         """
 
-        if len(lev_range) != 3 :
+        if len(lev_list) != 3 :
             print("ERROR: wrong number of elements to generate levels")
             sys.exit(1)
             
-        lv = lev_range[0]
-        inc = lev_range[2]
+        lv = lev_list[0]
             
-        levs = []
-        while np.sign(inc) * (lev_range[1] - lv) > -self.tol :
-            levs.append(lv)
-            lv += inc
+        gen_levs = []
+        while np.sign(lev_list[2]) * (lev_list[1] - lv) > -self.tol :
+            gen_levs.append(lv)
+            lv += lev_list[2]
 
-        self.add_levels(levs)
+        self.add_levels(gen_levs)
             
 
+        
 class Label(object):
     """ create a label
     """
