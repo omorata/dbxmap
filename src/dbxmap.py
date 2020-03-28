@@ -547,15 +547,7 @@ class Contour(object):
         if cnfg != None and 'gen_levels' in cnfg:
             lev_range = [(float(i) * self.base) for i in cnfg['gen_levels']]
 
-            lv = lev_range[0]
-            inc = lev_range[2]
-            
-            levs = []
-            while np.sign(inc) * (lev_range[1] - lv) > -self.tol :
-                levs.append(lv)
-                lv += inc
-
-            self.add_levels(levs)
+            self.generate_levels(lev_range)
             
                 
         if cnfg != None and 'pbase' in cnfg:
@@ -579,7 +571,17 @@ class Contour(object):
                 print("WARNING: no base defined for percentage levels")
                 pass
 
+            
+        if cnfg != None and 'pgen_levels' in cnfg:
+            try :
+                plev_range = [(float(i) * self.pbase * 0.01) for i in cnfg['pgen_levels']]
+                self.generate_levels(plev_range)
                 
+            except AttributeError :
+                print("WARNING: no base defined for percentage levels")
+                pass
+
+            
         if cnfg != None and 'linewidth' in cnfg:
             self.linewidth = float(cnfg['linewidth'])
         else :
@@ -609,10 +611,6 @@ class Contour(object):
                     sys.exit("Exiting")
 
 
-
-
-
-        
     def add_levels(self, new_levels) :
         """Adds new levels to the current list of levels.
 
@@ -630,6 +628,29 @@ class Contour(object):
             prev.sort()
             self.levels = prev
 
+
+    def generate_levels(self, lev_range):
+        """Automatically creates a set of levels and adds them to the
+        list of levels
+
+        Args:
+            lev_range - three element list with the minimum and maximum
+                        values of the range, plus the increment
+        """
+
+        if len(lev_range) != 3 :
+            print("ERROR: wrong number of elements to generate levels")
+            sys.exit(1)
+            
+        lv = lev_range[0]
+        inc = lev_range[2]
+            
+        levs = []
+        while np.sign(inc) * (lev_range[1] - lv) > -self.tol :
+            levs.append(lv)
+            lv += inc
+
+        self.add_levels(levs)
             
 
 class Label(object):
