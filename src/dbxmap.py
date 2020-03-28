@@ -21,6 +21,7 @@ from astropy import units as u
 import yaml
 
 import os
+import sys
 
 import matplotlib
 
@@ -354,9 +355,9 @@ class Dataset(object) :
                     
             elif self.dtype == 'cntr' or self.dtype == 'contour':
                 if 'contours' in cnfg:
-                    self.contour = Contour(cnfg['contours'], parent)
+                    self.contour = Contour(cnfg['contours'], parent, name=self.name)
                 elif hasattr(parent, 'contour'):
-                    self.contour = Contour(None, parent)
+                    self.contour = Contour(None, parent, name=self.name)
                 else :
                     raise Exception('Error: contour is not defined anywhere')
 
@@ -497,12 +498,26 @@ class Colorbar(object):
             except AttributeError:
                 self.text = ''
 
-            
+
+                
 class Contour(object):
     """ Create contours."""
 
-    def __init__(self, cnfg, parent) :
+    tol = 1.e-10
+    
+    def __init__(self, cnfg, parent, name='') :
 
+        self.append_contours = False
+        
+        if cnfg !=None and 'append' in cnfg:
+            if cnfg['append'] == True :
+                self.append_contours = True
+                try :
+                    self.levels = parent.contour.levels.copy()
+                except:
+                    pass
+
+                
         if cnfg != None and 'base' in cnfg:
             self.base = float(cnfg['base'])
         else :
@@ -522,49 +537,49 @@ class Contour(object):
             except AttributeError :
                 self.colors = 'black'
 
+                
         if cnfg != None and 'levels' in cnfg:
             sc_levels = [(float(i) * self.base) for i in cnfg['levels']]
+
+            self.add_levels(sc_levels)
+
             
-            if not hasattr(self, 'levels') :
-                self.levels = sc_levels
-
-            else:
-                prev = self.levels
-                prev.append(sc_levels)
-                prev.sort()
-                self.levels = prev
-        else:
-            try:
-                self.levels = parent.contour.levels
-                if self.base != 1 :
-                    self.levels = [(i * self.base) for i in self.levels]
-                
-            except:
-                pass
-
         if cnfg != None and 'gen_levels' in cnfg:
-            lev_range = [(float(i) * base) for i in cnfg['gen_levels']]
+            lev_range = [(float(i) * self.base) for i in cnfg['gen_levels']]
 
             lv = lev_range[0]
             inc = lev_range[2]
             
-            if not hasattr(self, 'levels'):
-                levs = []
-                while np.sign(inc) * (lev_range[1] - lv) > -1e-10 :
-                    levs.append(lv)
-                    lv += inc
+            levs = []
+            while np.sign(inc) * (lev_range[1] - lv) > -self.tol :
+                levs.append(lv)
+                lv += inc
 
-                self.levels = levs
+            self.add_levels(levs)
+            
+                
+        if cnfg != None and 'pbase' in cnfg:
+            self.pbase = float(cnfg['pbase'])
+        else :
+            try:
+                self.pbase = parent.contour.pbase
 
-            else :
-                prev = self.levels
-                while np.sign(inc) * (lev_range[1] - lv) > -1e-10 :
-                    prev.append(lv)
-                    lv += inc
+            except AttributeError:
+                pass
 
-                prev.sort()
-                self.levels = prev
+            
+        if cnfg != None and 'plevels' in cnfg:
+            try :
+                pc_levels = [(float(i) * self.pbase * 0.01) for i in
+                             cnfg['plevels']]
 
+                self.add_levels(pc_levels)
+
+            except AttributeError :
+                print("WARNING: no base defined for percentage levels")
+                pass
+
+                
         if cnfg != None and 'linewidth' in cnfg:
             self.linewidth = float(cnfg['linewidth'])
         else :
@@ -584,6 +599,38 @@ class Contour(object):
                 self.linestyle = '-'
 
 
+        if name:
+            if not hasattr(self, 'levels'):
+                try :
+                    self.levels = parent.contour.levels.copy()
+                except:
+                    print("ERROR: no level definition anywhere for the dataset",
+                             name)
+                    sys.exit("Exiting")
+
+
+
+
+
+        
+    def add_levels(self, new_levels) :
+        """Adds new levels to the current list of levels.
+
+        If the list of levels already existed, sorts them.
+        Args:
+           new_levels: list of new levels to add
+        """
+        
+        if not hasattr(self, 'levels') :
+            self.levels = new_levels
+
+        else:
+            prev = self.levels
+            prev.extend(new_levels)
+            prev.sort()
+            self.levels = prev
+
+            
 
 class Label(object):
     """ create a label
