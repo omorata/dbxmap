@@ -541,15 +541,12 @@ class Contour(object):
 
                 
         if cnfg != None and 'levels' in cnfg:
-            sc_levels = [(float(i) * self.base) for i in cnfg['levels']]
-
-            self.add_levels(sc_levels)
+            self.add_levels(self.scale_values(self.base, cnfg['levels']))
 
             
         if cnfg != None and 'gen_levels' in cnfg:
-            lev_range = [(float(i) * self.base) for i in cnfg['gen_levels']]
-
-            self.generate_levels(lev_range)
+            self.generate_levels(self.scale_values(self.base,
+                                                   cnfg['gen_levels']))
             
                 
         if cnfg != None and 'pbase' in cnfg:
@@ -564,10 +561,8 @@ class Contour(object):
             
         if cnfg != None and 'plevels' in cnfg:
             try :
-                pc_levels = [(float(i) * self.pbase * 0.01) for i in
-                             cnfg['plevels']]
-
-                self.add_levels(pc_levels)
+                self.add_levels(self.scale_values(self.pbase*0.01,
+                                                  cnfg['plevels']))
 
             except AttributeError :
                 print("WARNING: no base defined for percentage levels")
@@ -576,9 +571,8 @@ class Contour(object):
             
         if cnfg != None and 'gen_plevels' in cnfg:
             try :
-                plev_range = [(float(i) * self.pbase * 0.01) for i in
-                              cnfg['gen_plevels']]
-                self.generate_levels(plev_range)
+                self.generate_levels(self.scale_values(self.pbase*0.01,
+                                                       cnfg['gen_plevels']))
                 
             except AttributeError :
                 print("WARNING: no base defined for percentage levels")
@@ -620,6 +614,12 @@ class Contour(object):
                              name)
                     sys.exit("Exiting")
 
+                    
+    @staticmethod
+    def scale_values(factor, vlist):
+        """Scales the values in vlist by factor."""
+
+        return [(float(i) * factor) for i in vlist]
 
         
     def add_levels(self, new_levels) :
