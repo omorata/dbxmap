@@ -213,7 +213,6 @@ class Panel(object) :
                 if vw.center == None:
                     vw.center = d.get_reference()
 
-                
                 gc.append(aplpy.FITSFigure(d.filename,
                                            figure=fig,
                                            subplot=self.position,
@@ -225,7 +224,14 @@ class Panel(object) :
 
             cid += 1
 
-        #gc[idx].add_beam()
+            try:
+                gc[idx].add_beam()
+            except KeyError:
+                if hasattr(d, 'bmaj') :
+                    gc[idx].add_beam(major=d.bmaj, minor=d.bmin, angle=d.bpa)
+                    
+                pass
+            
 
         for lb in self.labels :
             gc = lb.add_label(gc, idx)
@@ -369,6 +375,24 @@ class Dataset(object) :
                 else :
                     raise Exception('Error: contour is not defined anywhere')
 
+                
+        if 'beam' in cnfg:
+            x = dict(cnfg['beam'])
+
+            if 'bmaj' in x :
+                self.bmaj = x['bmaj'] / 3600
+
+            if 'bmin' in x :
+                self.bmin = x['bmin'] / 3600
+            else :
+                self.bmon = self.bmaj
+
+            if 'bpa' in x :
+                self.bpa = x['bpa']
+            else :
+                self.bpa = 0
+
+
 
             
     def get_range_from_scale(self):
@@ -429,7 +453,6 @@ class Dataset(object) :
                              linewidths=self.contour.linewidth,
                              linestyles=self.contour.linestyle)
         
-
 
 
 class Pixrange(object):
