@@ -352,6 +352,13 @@ class Dataset(object) :
                     self.pixrange = Pixrange(None, parent)
                 else :
                     raise Exception('Error: pixrange is not defined anywhere')
+
+                if not hasattr(self.pixrange, 'range'):
+                    if hasattr(self.pixrange, 'scale') :
+                        self.pixrange.range = self.get_range_from_scale()
+                    else :
+                        raise Exception('Error: undefined pixel range')
+                        sys.exit(1)
                     
             elif self.dtype == 'cntr' or self.dtype == 'contour':
                 if 'contours' in cnfg:
@@ -363,17 +370,29 @@ class Dataset(object) :
                     raise Exception('Error: contour is not defined anywhere')
 
 
-                
+            
+    def get_range_from_scale(self):
+        """Calculates the pixel range from the given percentile scale."""
+        
+        hdulist = fits.open(self.filename)
+        dt = hdulist[0].data
+
+        diff = (100-self.pixrange.scale)*0.5
+        rg = [np.nanpercentile(dt, diff), np.nanpercentile(dt, 100-diff)]
+
+        return rg
+
+        
     def get_reference(self):
         """ read the reference position of the datasetfrom the FITS
             header
         """
+
         hdulist = fits.open(self.filename)
         w = wcs.WCS(hdulist[0].header)
 
-
         center = (w.wcs.crval[0], w.wcs.crval[1])
-        #print(center,"-----")
+
         return center
 
     
@@ -439,28 +458,52 @@ class Pixrange(object):
 
         if cnfg != None and 'range' in cnfg:
             cfgrange = cnfg['range']
+            r_dim = np.shape(cfgrange)[0]
 
-            self.range = [(float(i) * self.base) for i in cfgrange[0:2]]
+            if '%' in str(cfgrange[0]):
+                self.scale = float(cnfg['range'][0].split('%')[0])
 
-            if np.shape(cfgrange)[0] == 3 :
-                self.stretch = cfgrange[2]
+                if self.scale > 100 or self.scale < 1 :
+                    print("ERROR: wrong scale for the pixel range")
+                    sys.exit(1)
+
+                if r_dim == 2 :
+                    self.stretch = cfgrange[1]
+                else :
+                    self.stretch = 'linear'
 
             else :
-                self.stretch = 'linear'
+                if r_dim > 1 :
+                    self.range = [(float(i) * self.base) for i in cfgrange[0:2]]
+                    
+                    if r_dim == 3 :
+                        self.stretch = cfgrange[2]
+                    else :
+                        self.stretch = 'linear'
+                    
+                else :
+                    print("ERROR: wrong number of parameters in pixrange",
+                          "definition")
+                    sys.exit(1)
 
         else :
             try:
                 self.range = parent.pixrange.range
 
             except AttributeError:
-                pass
+                try :
+                    self.scale = parent.pixrange.scale
+
+                except AttributeError:
+                    print("We are in trouble")
+                    pass
 
             try:
                 self.stretch = parent.pixrange.stretch
-
             except AttributeError:
                 pass
 
+            
 
             
 class Colorbar(object):
