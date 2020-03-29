@@ -327,8 +327,8 @@ class View(object) :
 
             
 class Dataset(object) :
-    """ create a dataset object
-    """
+    """Create a dataset object."""
+    
     def __init__(self, cnfg, name, parent):
 
         self.name = name
