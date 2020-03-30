@@ -213,7 +213,6 @@ class Panel(object) :
                 if vw.center == None:
                     vw.center = d.get_reference()
 
-                
                 gc.append(aplpy.FITSFigure(d.filename,
                                            figure=fig,
                                            subplot=self.position,
@@ -225,7 +224,19 @@ class Panel(object) :
 
             cid += 1
 
-        #gc[idx].add_beam()
+            try:
+                # it has to be tested yet
+                if hasattr(d, 'beam_args') :
+                    gc[idx].add_beam(**d.beam_args)
+                else :
+                    gc[idx].add_beam()
+
+            except KeyError:
+                if hasattr(d, 'beam_args') :
+                    gc[idx].add_beam(**d.beam_shape, **d.beam_args)
+                    
+                pass
+            
 
         for lb in self.labels :
             gc = lb.add_label(gc, idx)
@@ -319,10 +330,9 @@ class View(object) :
             gp[idx].recenter(self.center[0], self.center[1],
                              radius=self.radius)
 
-        elif sef.vtype == 'box' :
+        elif self.vtype == 'box' :
             gp[idx].recenter(self.center[0], self.center[1],
                              height=self.box[0], width=self.box[1])
-
 
 
             
@@ -368,6 +378,9 @@ class Dataset(object) :
                     self.contour = Contour(None, parent, name=self.name)
                 else :
                     raise Exception('Error: contour is not defined anywhere')
+                
+        if 'beam' in cnfg:
+            self.read_beam_parameters(dict(cnfg['beam']))
 
 
             
@@ -382,7 +395,8 @@ class Dataset(object) :
 
         return rg
 
-        
+
+    
     def get_reference(self):
         """ read the reference position of the datasetfrom the FITS
             header
@@ -394,9 +408,79 @@ class Dataset(object) :
         center = (w.wcs.crval[0], w.wcs.crval[1])
 
         return center
-
     
 
+    
+    def read_beam_parameters(self, battr):
+        """Reads the beam parameters from the configuration file
+
+        It populates self.beam_shape and self.beam_args
+
+        TODO:
+            proper unit treatment
+        """
+        
+        if 'bmaj' in battr :
+            bmaj = battr['bmaj'] / 3600
+            self.beam_shape = {'major' : bmaj}
+            
+        if 'major' in self.beam_shape :
+
+            if 'bmin' in battr :
+                self.beam_shape['minor'] = battr['bmin'] / 3600
+            else :
+                self.beam_shape['minor'] = bmaj
+            
+            if 'bpa' in battr :
+                self.beam_shape['angle'] = battr['bpa']
+            else :
+                self.beam_shape['angle'] = 0.
+                               
+        if 'linewidth' in battr :
+            linewidth = float(battr['linewidth'])
+        else :
+            linewidth = 0.5
+
+        if 'linestyle' in battr :
+            linestyle = battr['linestyle']
+        else :
+            linestyle = 'solid'
+
+        if 'edgecolor' in battr :
+            edgecolor = battr['edgecolor']
+        else :
+            edgecolor = 'steelblue'
+
+        if 'facecolor' in battr :
+            facecolor = battr['facecolor']
+        else :
+            facecolor = 'steelblue'
+
+        if 'alpha' in battr :
+            alpha = float(battr['alpha'])
+        else :
+            alpha = 1
+
+        if 'frame' in battr:
+            frame = battr['frame']
+        else:
+            frame = False
+
+        self.beam_args = {'linewidth' : linewidth, 'linestyle' : linestyle,
+                          'edgecolor' : edgecolor, 'alpha' : alpha,
+                          'facecolor' : facecolor, 'frame' : frame}
+
+        if 'corner' in battr:
+            self.beam_args['corner'] = battr['corner']
+
+        if 'borderpad' in battr:
+            self.beam_args['borderpad'] = battr['borderpad']
+                
+        if 'pad' in battr:
+            self.beam_args['pad'] = battr['pad']
+                
+
+            
     def show(self, gc, idx) :
         """ show the dataset
             It takes into account whether it is a pixel map or a contour
@@ -404,6 +488,7 @@ class Dataset(object) :
         """
         if self.dtype == 'pixel' :
             self.show_colorscale(gc, idx)
+
         elif self.dtype == 'cntr' :
             self.show_contour(gc, idx)
 
@@ -431,7 +516,7 @@ class Dataset(object) :
         
 
 
-
+        
 class Pixrange(object):
     """ create a pixrange
     """
