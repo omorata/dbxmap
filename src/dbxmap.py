@@ -225,10 +225,15 @@ class Panel(object) :
             cid += 1
 
             try:
-                gc[idx].add_beam()
-            except KeyError:
+                # it has to be tested yet
                 if hasattr(d, 'beam_args') :
                     gc[idx].add_beam(**d.beam_args)
+                else :
+                    gc[idx].add_beam()
+
+            except KeyError:
+                if hasattr(d, 'beam_args') :
+                    gc[idx].add_beam(**d.beam_shape, **d.beam_args)
                     
                 pass
             
@@ -377,24 +382,68 @@ class Dataset(object) :
 
                 
         if 'beam' in cnfg:
-            x = dict(cnfg['beam'])
+            battr = dict(cnfg['beam'])
 
-            if 'bmaj' in x :
-                bmaj = x['bmaj'] / 3600
+            if 'bmaj' in battr :
+                bmaj = battr['bmaj'] / 3600
 
-            if 'bmin' in x :
-                bmin = x['bmin'] / 3600
+            if 'bmin' in battr :
+                bmin = battr['bmin'] / 3600
             else :
                 bmin = bmaj
 
-            if 'bpa' in x :
-                bpa = x['bpa']
+            if 'bpa' in battr :
+                bpa = battr['bpa']
             else :
                 bpa = 0
 
-            self.beam_args = { 'major' : bmaj, 'minor' : bmin,
-                               'angle' : bpa}
+            self.beam_shape = { 'major' : bmaj, 'minor' : bmin, 'angle' : bpa}
+                               
+            if 'linewidth' in battr :
+                linewidth = float(battr['linewidth'])
+            else :
+                linewidth = 1.
 
+            if 'linestyle' in battr :
+                linestyle = battr['linestyle']
+            else :
+                linestyle = 'solid'
+
+            if 'edgecolor' in battr :
+                edgecolor = battr['edgecolor']
+            else :
+                edgecolor = 'black'
+
+            if 'facecolor' in battr :
+                facecolor = battr['facecolor']
+            else :
+                facecolor = 'steelblue'
+
+            if 'alpha' in battr :
+                alpha = float(battr['alpha'])
+            else :
+                alpha = 1
+
+            if 'frame' in battr:
+                frame = battr['frame']
+            else:
+                frame = False
+
+                
+            self.beam_args = {'linewidth' : linewidth, 'linestyle' : linestyle,
+                              'edgecolor' : edgecolor, 'alpha' : alpha,
+                              'facecolor' : facecolor, 'frame' : frame}
+
+            if 'corner' in battr:
+                self.beam_args['corner'] = battr['corner']
+
+            if 'borderpad' in battr:
+                self.beam_args['borderpad'] = battr['borderpad']
+                
+            if 'pad' in battr:
+                self.beam_args['pad'] = battr['pad']
+
+                
             
     def get_range_from_scale(self):
         """Calculates the pixel range from the given percentile scale."""
