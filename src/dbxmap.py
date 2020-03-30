@@ -227,8 +227,8 @@ class Panel(object) :
             try:
                 gc[idx].add_beam()
             except KeyError:
-                if hasattr(d, 'bmaj') :
-                    gc[idx].add_beam(major=d.bmaj, minor=d.bmin, angle=d.bpa)
+                if hasattr(d, 'beam_args') :
+                    gc[idx].add_beam(**d.beam_args)
                     
                 pass
             
@@ -380,19 +380,20 @@ class Dataset(object) :
             x = dict(cnfg['beam'])
 
             if 'bmaj' in x :
-                self.bmaj = x['bmaj'] / 3600
+                bmaj = x['bmaj'] / 3600
 
             if 'bmin' in x :
-                self.bmin = x['bmin'] / 3600
+                bmin = x['bmin'] / 3600
             else :
-                self.bmon = self.bmaj
+                bmin = bmaj
 
             if 'bpa' in x :
-                self.bpa = x['bpa']
+                bpa = x['bpa']
             else :
-                self.bpa = 0
+                bpa = 0
 
-
+            self.beam_args = { 'major' : bmaj, 'minor' : bmin,
+                               'angle' : bpa}
 
             
     def get_range_from_scale(self):
