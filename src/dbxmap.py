@@ -842,7 +842,8 @@ class Label(object):
 
                                    
 class Markers(object) :
-
+    """Class to define markers (including polygons)."""
+    
     def __init__ (self, cnfg, parent):
 
         self.wkdir = parent.wkdir
@@ -857,32 +858,39 @@ class Markers(object) :
             file_str = [k for k in cnfg if 'file' in k]
 
             if file_str :
-
+                if not hasattr(self, 'marklist'):
+                    self.marklist = []
+                    
                 for files in file_str :
                     fname = os.path.join(self.wkdir, cnfg[files])
-                    list_markers.append(self.read_markers(fname))
 
-                self.marklist = list_markers
-                    
+                    self.marklist.extend(self.read_markers(fname))
+
             else :
                 self.marklist = None
                 
-        #print("------>", self.marklist)
-
 
 
     def add_markers(self, gc, i):
 
         lmarkers = self.marklist
-
+        
         for mk in lmarkers:
-            
-            gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
-                               edgecolor=mk[0]['color'],
-                               c=mk[0]['filled'],
-                               linewidths=mk[0]['linewidth'],
-                               s=mk[0]['size'],
-                               marker='$+$')
+            type = mk['type']
+
+            if type == 'polygon' :
+                gc[i].show_polygons(mk['corners'], **mk['style'])
+                
+                gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
+                                mk['id'], **mk['l_style'])
+                
+            elif type == 'cross' :
+                gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
+                                   edgecolor=mk[0]['color'],
+                                   c=mk[0]['filled'],
+                                   linewidths=mk[0]['linewidth'],
+                                   s=mk[0]['size'],
+                                   marker='$+$')
 
 
 
@@ -892,18 +900,91 @@ class Markers(object) :
         """
 
         tbl = ascii.read(fname, delimiter=" ", format="basic")
-
+        
         mark_list = []
         for marker in tbl:
 
-            if marker[0] == "cross" :
-                props = Markers.check_cross(marker)
-                if props != None :
-                    mark_list.append(props)
+            #if marker[0] == "cross" :
+            #    props = Markers.check_cross(marker)
+            #    if props != None :
+            #        mark_list.append(props)
+
+            if marker['type'] == 'Polygon' :
+                properties = self.read_polygon(marker)
+                mark_list.append(properties)
 
         return mark_list
 
-                    
+    
+    
+    @staticmethod
+    def read_polygon(it):
+        """Read out the definition of a polygon marker."""
+
+        attrib = {'type' : 'polygon', 'id' : it['id']}
+        
+        coord_elements = it['corners'].split(" ")
+
+        c_dim = np.shape(coord_elements)[0]
+        if c_dim % 2 != 0 :
+            print("ERROR: uneven coordinates for polygon", it['id'])
+            sys.exit(1)
+
+        array_corners = np.empty([int(c_dim *0.5), 2])
+
+        lcorners = []
+        for p in range(int(c_dim * 0.5)) :
+            array_corners[p,:] = [float(coord_elements.pop(0)),
+                                  float(coord_elements.pop(0))]
+
+        attrib['bcenter'] = [np.average(array_corners[:,0]),
+                             np.average(array_corners[:,1])]
+                                
+        lcorners.append(array_corners)
+        attrib['corners'] = lcorners
+
+        if it['edgecolor'] != "" :
+            edgecolor = it['edgecolor']
+        else :
+            edgecolor = 'black'
+
+        if it['linewidth'] != "" :
+            linewidth = it['linewidth']
+        else :
+            linewidth = 1.0
+
+        if it['linestyle'] != "" :
+            linestyle = it['linestyle']
+        else :
+            linestyle = 'solid'
+
+        style = { 'edgecolor': edgecolor, 'linewidth' : linewidth,
+                  'linestyle' : linestyle}
+        
+        attrib['style'] = style
+
+        if it['labelcolor'] != "":
+            labelcolor = it['labelcolor']
+        else :
+            labelcolor = 'black'
+
+        if it['weight'] != "":
+            weight = it['weight']
+        else :
+            weight = 'normal'
+            
+        if it['fontsize'] != "":
+            size = it['fontsize']
+        else :
+            size = 12
+            
+        labelstyle = {'color' : labelcolor, 'weight' : weight, 'size' : size}
+
+        attrib['l_style'] = labelstyle
+        
+        return attrib
+        
+    
     @staticmethod
     def check_cross(it) :
         """ check configuration of a cross marker
@@ -952,6 +1033,7 @@ def read_configuration_file(cfgfile):
 def dump_config(dfile, cnfg) :
     """ dump the configuration in the logfile
     """ 
+
     with open(dfile, 'a+') as outfile:
         yaml.dump(cnfg, outfile, default_flow_style=False)
 
@@ -983,6 +1065,7 @@ def process_config(ifiles, dirs) :
 def read_command_line() :
     """ read command line arguments
     """
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', action='store',
                         help='configuration file', default='plot_cfg.yml')
@@ -997,7 +1080,6 @@ def read_command_line() :
 ##-- End of functions --------------------------------------------------
 
 ##-- Main --------------------------------------------------------------
-
 
 if __name__ == "__main__" :
     ## defaults
@@ -1023,7 +1105,6 @@ if __name__ == "__main__" :
 
     # make the figure
     #
-
     fig = Page.create()
 
     Panels.add_panels(fig)

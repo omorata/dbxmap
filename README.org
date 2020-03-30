@@ -14,6 +14,7 @@ allows to define, among other things:
     on their definition
   + plot beam size of the data
   + show a colorbar with the pixel data range
+  + overlay polygons
 
 This is a work in progress and not all the planned functionalities are
 implemented yet
@@ -29,10 +30,25 @@ that will be contained into the panel(s) of the plot.
 
 *** Page section
 It may contain the entries:
-outfile :: name of output file
-dpi :: dots per inch of the output file
-size :: two element list with the size in cm
+- outfile :: name of output file
+- dpi :: dots per inch of the output file
+- size :: two element list with the size in cm
 
 *** Panels section
+The /Panels/ section contains the definition of each desired panel, plus
+optional options that affect all the panels. Some fields are:
+- yx :: defining the panel grid. List of two values for the range in the /y/ and
+        /x axes/.
+- view :: defining the view of the map. Possible subfields:
+  - type :: type of view selection: 'radius' or 'box'
+  - center :: center position of the map. If not present, calculated from the
+              reference position of the fits file
+  - radius :: radius, in deg, for the /radius/ view 
+- labels :: definition of labels present in all panels
+- contours :: contour definition for all panels
+- pixrange :: pixel scale definition for all panels
+- markers :: markers defined in all panels.
+- panel-xx :: proper definition of panels. All must start with the string
+              /panel/ and then some identifier  
 **** panel definition
 ***** dataset definition
