@@ -379,71 +379,11 @@ class Dataset(object) :
                     self.contour = Contour(None, parent, name=self.name)
                 else :
                     raise Exception('Error: contour is not defined anywhere')
-
                 
         if 'beam' in cnfg:
-            battr = dict(cnfg['beam'])
+            self.read_beam_parameters(dict(cnfg['beam']))
 
-            if 'bmaj' in battr :
-                bmaj = battr['bmaj'] / 3600
 
-            if 'bmin' in battr :
-                bmin = battr['bmin'] / 3600
-            else :
-                bmin = bmaj
-
-            if 'bpa' in battr :
-                bpa = battr['bpa']
-            else :
-                bpa = 0
-
-            self.beam_shape = { 'major' : bmaj, 'minor' : bmin, 'angle' : bpa}
-                               
-            if 'linewidth' in battr :
-                linewidth = float(battr['linewidth'])
-            else :
-                linewidth = 0.5
-
-            if 'linestyle' in battr :
-                linestyle = battr['linestyle']
-            else :
-                linestyle = 'solid'
-
-            if 'edgecolor' in battr :
-                edgecolor = battr['edgecolor']
-            else :
-                edgecolor = 'steelblue'
-
-            if 'facecolor' in battr :
-                facecolor = battr['facecolor']
-            else :
-                facecolor = 'steelblue'
-
-            if 'alpha' in battr :
-                alpha = float(battr['alpha'])
-            else :
-                alpha = 1
-
-            if 'frame' in battr:
-                frame = battr['frame']
-            else:
-                frame = False
-
-                
-            self.beam_args = {'linewidth' : linewidth, 'linestyle' : linestyle,
-                              'edgecolor' : edgecolor, 'alpha' : alpha,
-                              'facecolor' : facecolor, 'frame' : frame}
-
-            if 'corner' in battr:
-                self.beam_args['corner'] = battr['corner']
-
-            if 'borderpad' in battr:
-                self.beam_args['borderpad'] = battr['borderpad']
-                
-            if 'pad' in battr:
-                self.beam_args['pad'] = battr['pad']
-
-                
             
     def get_range_from_scale(self):
         """Calculates the pixel range from the given percentile scale."""
@@ -456,7 +396,8 @@ class Dataset(object) :
 
         return rg
 
-        
+
+    
     def get_reference(self):
         """ read the reference position of the datasetfrom the FITS
             header
@@ -468,9 +409,79 @@ class Dataset(object) :
         center = (w.wcs.crval[0], w.wcs.crval[1])
 
         return center
-
     
 
+    
+    def read_beam_parameters(self, battr):
+        """Reads the beam parameters from the configuration file
+
+        It populates self.beam_shape and self.beam_args
+
+        TODO:
+            proper unit treatment
+        """
+        
+        if 'bmaj' in battr :
+            bmaj = battr['bmaj'] / 3600
+            self.beam_shape = {'major' : bmaj}
+            
+        if 'major' in self.beam_shape :
+
+            if 'bmin' in battr :
+                self.beam_shape['minor'] = battr['bmin'] / 3600
+            else :
+                self.beam_shape['minor'] = bmaj
+            
+            if 'bpa' in battr :
+                self.beam_shape['angle'] = battr['bpa']
+            else :
+                self.beam_shape['angle'] = 0.
+                               
+        if 'linewidth' in battr :
+            linewidth = float(battr['linewidth'])
+        else :
+            linewidth = 0.5
+
+        if 'linestyle' in battr :
+            linestyle = battr['linestyle']
+        else :
+            linestyle = 'solid'
+
+        if 'edgecolor' in battr :
+            edgecolor = battr['edgecolor']
+        else :
+            edgecolor = 'steelblue'
+
+        if 'facecolor' in battr :
+            facecolor = battr['facecolor']
+        else :
+            facecolor = 'steelblue'
+
+        if 'alpha' in battr :
+            alpha = float(battr['alpha'])
+        else :
+            alpha = 1
+
+        if 'frame' in battr:
+            frame = battr['frame']
+        else:
+            frame = False
+
+        self.beam_args = {'linewidth' : linewidth, 'linestyle' : linestyle,
+                          'edgecolor' : edgecolor, 'alpha' : alpha,
+                          'facecolor' : facecolor, 'frame' : frame}
+
+        if 'corner' in battr:
+            self.beam_args['corner'] = battr['corner']
+
+        if 'borderpad' in battr:
+            self.beam_args['borderpad'] = battr['borderpad']
+                
+        if 'pad' in battr:
+            self.beam_args['pad'] = battr['pad']
+                
+
+            
     def show(self, gc, idx) :
         """ show the dataset
             It takes into account whether it is a pixel map or a contour
@@ -478,6 +489,7 @@ class Dataset(object) :
         """
         if self.dtype == 'pixel' :
             self.show_colorscale(gc, idx)
+
         elif self.dtype == 'cntr' :
             self.show_contour(gc, idx)
 
@@ -505,6 +517,7 @@ class Dataset(object) :
         
 
 
+        
 class Pixrange(object):
     """ create a pixrange
     """
