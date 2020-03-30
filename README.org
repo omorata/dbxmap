@@ -1,6 +1,38 @@
 * dbxmap
-Tool for making maps from FITS files or similar
+*dbxmap* is a tool for plotting astronomical maps from FITS files
 
 The goal of the project is to be able to plot /any kind/ of astronomical map out
-of a fits file: continuum maps, data cubes etc. *dbxmap* is a front end to use
-APLpy for a set of pre-defined types of plots.
+of a fits file (continuum maps, data cubes, etc) in a reasonably simple way.
+*dbxmap* is a front end to APLpy for a set of pre-defined types of plots.
+
+The plotting is controlled by a YAML configuration file that, at this moment,
+allows to define, among other things:
+  + output file
+  + view of the data file
+  + number of panels in the figure
+  + plot data as a pixel map and/or as contours with, hopefully, full control
+    on their definition
+  + plot beam size of the data
+  + show a colorbar with the pixel data range
+
+This is a work in progress and not all the planned functionalities are
+implemented yet
+
+
+** configuration file
+
+The plotting of the data is controled by a YAML configuration file, which
+should contain the definition of all the elements that should be in the map.
+The upper structure of the file is divided into a *page* section containing the
+general definition of the figure and a *panels* section with the information
+that will be contained into the panel(s) of the plot.
+
+*** Page section
+It may contain the entries:
+outfile :: name of output file
+dpi :: dots per inch of the output file
+size :: two element list with the size in cm
+
+*** Panels section
+**** panel definition
+***** dataset definition
