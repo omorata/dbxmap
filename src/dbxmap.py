@@ -71,7 +71,7 @@ class Figure(object):
     def create(self) :
         """Create figure."""
 
-        print("Creating figure [", self.name,"]")
+        print("  + creating figure [", self.name,"]")
         self.f = plt.figure(figsize=(self.size))
         self.frame.add_panels(self.f)
         return self.f
@@ -133,7 +133,7 @@ class Frame(object):
             p_idx = 0
             
             for panel in panel_str:
-                print("  + adding panel:", panel, "...")
+                print("    + adding panel:", panel, "...")
                 panel_list.append(Panel(cnfg[panel], panel, p_idx, self))
                 p_idx += 1
 
@@ -150,7 +150,7 @@ class Frame(object):
         gc = []
         
         for p in self.panels :
-            print("  + plotting panel:", p.name, "...")
+            print("    + plotting panel:", p.name, "...")
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
 
