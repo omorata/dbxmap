@@ -402,7 +402,7 @@ class Dataset(object) :
             if 'linewidth' in battr :
                 linewidth = float(battr['linewidth'])
             else :
-                linewidth = 1.
+                linewidth = 0.5
 
             if 'linestyle' in battr :
                 linestyle = battr['linestyle']
@@ -412,7 +412,7 @@ class Dataset(object) :
             if 'edgecolor' in battr :
                 edgecolor = battr['edgecolor']
             else :
-                edgecolor = 'black'
+                edgecolor = 'steelblue'
 
             if 'facecolor' in battr :
                 facecolor = battr['facecolor']
