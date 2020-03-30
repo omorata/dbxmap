@@ -794,11 +794,10 @@ class Markers(object) :
             type = mk['type']
 
             if type == 'polygon' :
-                gc[i].show_polygons(
-                    mk['corners'], edgecolor='purple', linewidth=1.2)
+                gc[i].show_polygons(mk['corners'], **mk['style'])
                 
                 gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
-                                mk['id'], color='lightgreen')
+                                mk['id'], **mk['l_style'])
                 
             elif type == 'cross' :
                 gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
@@ -852,10 +851,50 @@ class Markers(object) :
             array_corners[p,:] = [float(coord_elements.pop(0)),
                                   float(coord_elements.pop(0))]
 
-        attrib['bcenter'] = [np.average(corners[:,0]), np.average(corners[:,1])]
+        attrib['bcenter'] = [np.average(array_corners[:,0]),
+                             np.average(array_corners[:,1])]
                                 
         lcorners.append(array_corners)
         attrib['corners'] = lcorners
+
+        if it['edgecolor'] != "" :
+            edgecolor = it['edgecolor']
+        else :
+            edgecolor = 'black'
+
+        if it['linewidth'] != "" :
+            linewidth = it['linewidth']
+        else :
+            linewidth = 1.0
+
+        if it['linestyle'] != "" :
+            linestyle = it['linestyle']
+        else :
+            linestyle = 'solid'
+
+        style = { 'edgecolor': edgecolor, 'linewidth' : linewidth,
+                  'linestyle' : linestyle}
+        
+        attrib['style'] = style
+
+        if it['labelcolor'] != "":
+            labelcolor = it['labelcolor']
+        else :
+            labelcolor = 'black'
+
+        if it['weight'] != "":
+            weight = it['weight']
+        else :
+            weight = 'normal'
+            
+        if it['fontsize'] != "":
+            size = it['fontsize']
+        else :
+            size = 12
+            
+        labelstyle = {'color' : labelcolor, 'weight' : weight, 'size' : size}
+
+        attrib['l_style'] = labelstyle
         
         return attrib
         
