@@ -213,7 +213,6 @@ class Panel(object) :
                 if vw.center == None:
                     vw.center = d.get_reference()
 
-                
                 gc.append(aplpy.FITSFigure(d.filename,
                                            figure=fig,
                                            subplot=self.position,
@@ -225,7 +224,19 @@ class Panel(object) :
 
             cid += 1
 
-        #gc[idx].add_beam()
+            try:
+                # it has to be tested yet
+                if hasattr(d, 'beam_args') :
+                    gc[idx].add_beam(**d.beam_args)
+                else :
+                    gc[idx].add_beam()
+
+            except KeyError:
+                if hasattr(d, 'beam_args') :
+                    gc[idx].add_beam(**d.beam_shape, **d.beam_args)
+                    
+                pass
+            
 
         for lb in self.labels :
             gc = lb.add_label(gc, idx)
@@ -369,7 +380,70 @@ class Dataset(object) :
                 else :
                     raise Exception('Error: contour is not defined anywhere')
 
+                
+        if 'beam' in cnfg:
+            battr = dict(cnfg['beam'])
 
+            if 'bmaj' in battr :
+                bmaj = battr['bmaj'] / 3600
+
+            if 'bmin' in battr :
+                bmin = battr['bmin'] / 3600
+            else :
+                bmin = bmaj
+
+            if 'bpa' in battr :
+                bpa = battr['bpa']
+            else :
+                bpa = 0
+
+            self.beam_shape = { 'major' : bmaj, 'minor' : bmin, 'angle' : bpa}
+                               
+            if 'linewidth' in battr :
+                linewidth = float(battr['linewidth'])
+            else :
+                linewidth = 0.5
+
+            if 'linestyle' in battr :
+                linestyle = battr['linestyle']
+            else :
+                linestyle = 'solid'
+
+            if 'edgecolor' in battr :
+                edgecolor = battr['edgecolor']
+            else :
+                edgecolor = 'steelblue'
+
+            if 'facecolor' in battr :
+                facecolor = battr['facecolor']
+            else :
+                facecolor = 'steelblue'
+
+            if 'alpha' in battr :
+                alpha = float(battr['alpha'])
+            else :
+                alpha = 1
+
+            if 'frame' in battr:
+                frame = battr['frame']
+            else:
+                frame = False
+
+                
+            self.beam_args = {'linewidth' : linewidth, 'linestyle' : linestyle,
+                              'edgecolor' : edgecolor, 'alpha' : alpha,
+                              'facecolor' : facecolor, 'frame' : frame}
+
+            if 'corner' in battr:
+                self.beam_args['corner'] = battr['corner']
+
+            if 'borderpad' in battr:
+                self.beam_args['borderpad'] = battr['borderpad']
+                
+            if 'pad' in battr:
+                self.beam_args['pad'] = battr['pad']
+
+                
             
     def get_range_from_scale(self):
         """Calculates the pixel range from the given percentile scale."""
@@ -429,7 +503,6 @@ class Dataset(object) :
                              linewidths=self.contour.linewidth,
                              linestyles=self.contour.linestyle)
         
-
 
 
 class Pixrange(object):
