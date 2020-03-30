@@ -772,7 +772,9 @@ class Markers(object) :
             file_str = [k for k in cnfg if 'file' in k]
 
             if file_str :
-                self.marklist = []
+                if not hasattr(self, 'marklist'):
+                    self.marklist = []
+                    
                 for files in file_str :
                     fname = os.path.join(self.wkdir, cnfg[files])
 
@@ -792,8 +794,11 @@ class Markers(object) :
             type = mk['type']
 
             if type == 'polygon' :
-                print(mk['corners'])
-                gc[i].show_polygons(mk['corners'], edgecolor='red')
+                gc[i].show_polygons(
+                    mk['corners'], edgecolor='purple', linewidth=1.2)
+                
+                gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
+                                mk['id'], color='lightgreen')
                 
             elif type == 'cross' :
                 gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
@@ -846,6 +851,8 @@ class Markers(object) :
             corners[p,:] = [float(coord_elements.pop(0)),
                               float(coord_elements.pop(0))]
 
+        attrib['bcenter'] = [np.average(corners[:,0]), np.average(corners[:,1])]
+                                
         lcorners.append(corners)
         attrib['corners'] = lcorners
         
