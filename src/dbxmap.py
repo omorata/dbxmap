@@ -826,13 +826,14 @@ class Markers(object) :
             #        mark_list.append(props)
 
             if marker['type'] == 'Polygon' :
-                properties = self.get_polygon(marker)
+                properties = self.read_polygon(marker)
                 mark_list.append(properties)
 
         return mark_list
 
-
-    def get_polygon(self, it):
+    
+    @staticmethod
+    def read_polygon(it):
         """Read out the definition of a polygon marker."""
 
         attrib = {'type' : 'polygon', 'id' : it['id']}
@@ -844,16 +845,16 @@ class Markers(object) :
             print("ERROR: uneven coordinates for polygon", it['id'])
             sys.exit(1)
 
-        corners = np.empty([int(c_dim *0.5), 2])
+        array_corners = np.empty([int(c_dim *0.5), 2])
 
         lcorners = []
         for p in range(int(c_dim * 0.5)) :
-            corners[p,:] = [float(coord_elements.pop(0)),
-                              float(coord_elements.pop(0))]
+            array_corners[p,:] = [float(coord_elements.pop(0)),
+                                  float(coord_elements.pop(0))]
 
         attrib['bcenter'] = [np.average(corners[:,0]), np.average(corners[:,1])]
                                 
-        lcorners.append(corners)
+        lcorners.append(array_corners)
         attrib['corners'] = lcorners
         
         return attrib
@@ -907,6 +908,7 @@ def read_configuration_file(cfgfile):
 def dump_config(dfile, cnfg) :
     """ dump the configuration in the logfile
     """ 
+
     with open(dfile, 'a+') as outfile:
         yaml.dump(cnfg, outfile, default_flow_style=False)
 
@@ -938,6 +940,7 @@ def process_config(ifiles, dirs) :
 def read_command_line() :
     """ read command line arguments
     """
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', action='store',
                         help='configuration file', default='plot_cfg.yml')
@@ -952,7 +955,6 @@ def read_command_line() :
 ##-- End of functions --------------------------------------------------
 
 ##-- Main --------------------------------------------------------------
-
 
 if __name__ == "__main__" :
     ## defaults
@@ -978,7 +980,6 @@ if __name__ == "__main__" :
 
     # make the figure
     #
-
     fig = Page.create()
 
     Panels.add_panels(fig)
