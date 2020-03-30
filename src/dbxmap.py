@@ -772,32 +772,36 @@ class Markers(object) :
             file_str = [k for k in cnfg if 'file' in k]
 
             if file_str :
-
+                self.marklist = []
                 for files in file_str :
                     fname = os.path.join(self.wkdir, cnfg[files])
-                    list_markers.append(self.read_markers(fname))
 
-                self.marklist = list_markers
-                    
+                    self.marklist.extend(self.read_markers(fname))
+
             else :
                 self.marklist = None
                 
-        #print("------>", self.marklist)
 
 
 
     def add_markers(self, gc, i):
 
         lmarkers = self.marklist
-
+        
         for mk in lmarkers:
-            
-            gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
-                               edgecolor=mk[0]['color'],
-                               c=mk[0]['filled'],
-                               linewidths=mk[0]['linewidth'],
-                               s=mk[0]['size'],
-                               marker='$+$')
+            type = mk['type']
+
+            if type == 'polygon' :
+                print(mk['corners'])
+                gc[i].show_polygons(mk['corners'], edgecolor='red')
+                
+            elif type == 'cross' :
+                gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
+                                   edgecolor=mk[0]['color'],
+                                   c=mk[0]['filled'],
+                                   linewidths=mk[0]['linewidth'],
+                                   s=mk[0]['size'],
+                                   marker='$+$')
 
 
 
@@ -807,18 +811,47 @@ class Markers(object) :
         """
 
         tbl = ascii.read(fname, delimiter=" ", format="basic")
-
+        
         mark_list = []
         for marker in tbl:
 
-            if marker[0] == "cross" :
-                props = Markers.check_cross(marker)
-                if props != None :
-                    mark_list.append(props)
+            #if marker[0] == "cross" :
+            #    props = Markers.check_cross(marker)
+            #    if props != None :
+            #        mark_list.append(props)
+
+            if marker['type'] == 'Polygon' :
+                properties = self.get_polygon(marker)
+                mark_list.append(properties)
 
         return mark_list
 
-                    
+
+    def get_polygon(self, it):
+        """Read out the definition of a polygon marker."""
+
+        attrib = {'type' : 'polygon', 'id' : it['id']}
+        
+        coord_elements = it['corners'].split(" ")
+
+        c_dim = np.shape(coord_elements)[0]
+        if c_dim % 2 != 0 :
+            print("ERROR: uneven coordinates for polygon", it['id'])
+            sys.exit(1)
+
+        corners = np.empty([int(c_dim *0.5), 2])
+
+        lcorners = []
+        for p in range(int(c_dim * 0.5)) :
+            corners[p,:] = [float(coord_elements.pop(0)),
+                              float(coord_elements.pop(0))]
+
+        lcorners.append(corners)
+        attrib['corners'] = lcorners
+        
+        return attrib
+        
+    
     @staticmethod
     def check_cross(it) :
         """ check configuration of a cross marker
