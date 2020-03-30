@@ -330,10 +330,9 @@ class View(object) :
             gp[idx].recenter(self.center[0], self.center[1],
                              radius=self.radius)
 
-        elif sef.vtype == 'box' :
+        elif self.vtype == 'box' :
             gp[idx].recenter(self.center[0], self.center[1],
                              height=self.box[0], width=self.box[1])
-
 
 
             
