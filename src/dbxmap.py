@@ -757,7 +757,8 @@ class Label(object):
 
                                    
 class Markers(object) :
-
+    """Class to define markers (including polygons)."""
+    
     def __init__ (self, cnfg, parent):
 
         self.wkdir = parent.wkdir
@@ -783,7 +784,6 @@ class Markers(object) :
             else :
                 self.marklist = None
                 
-
 
 
     def add_markers(self, gc, i):
@@ -830,6 +830,7 @@ class Markers(object) :
 
         return mark_list
 
+    
     
     @staticmethod
     def read_polygon(it):
