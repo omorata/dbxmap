@@ -112,7 +112,7 @@ class Frame(object):
             self.view = View(cnfg['view'], self)
 
         if 'markers' in cnfg:
-            self.markers = Markers(cnfg['markers'], self)
+            self.markers = Marker(cnfg['markers'], self)
 
         if 'labels' in cnfg:
             self.labels = Label(cnfg['labels'], self)
@@ -182,21 +182,19 @@ class Panel(object) :
             
             
         if hasattr(parent, 'labels') and parent.labels != None:
-            self.labels = parent.labels.labels.copy()
+            self.labels = parent.labels
             self.label_props = parent.labels.label_props.copy()
         else :
             self.labels = None
 
         if 'labels' in cnfg:
             self.labels = Label(cnfg['labels'], self)
-        else :
-            self.labels = parent.labels
 
             
         if 'markers' in cnfg:
-            self.markers = Markers(cnfg['markers'], parent)
+            self.markers = Marker(cnfg['markers'], parent)
         elif hasattr(parent, 'markers'):
-            self.markers = Markers(None, parent)
+            self.markers = Marker(None, parent)
 
         if 'colorbar' in cnfg:
             self.colorbar = Colorbar(cnfg['colorbar'], self)
@@ -259,14 +257,13 @@ class Panel(object) :
                 pass
 
         if self.labels != None :
-            for lb in self.labels.labels :
+            for lb in self.labels.label_list :
                 gc = lb.add_label(gc, idx)
 
-        if hasattr(self, 'markers') :
-            a = self.markers
-            a.add_markers(gc, idx)
+        if self.markers != None:
+            for mk in self.markers.marklist :
+                mk.add_markers(gc, idx)
 
-            
         if hasattr(self, 'colorbar'):
             self.set_colorbar(gc[idx])
 
@@ -819,40 +816,28 @@ class Label(object):
     def __init__(self, cfg, parent):
 
         if hasattr(parent, 'labels') and parent.labels != None :
-            self.labels = parent.labels.copy()
+            self.label_list = parent.labels.label_list.copy()
         else:
-            self.labels = []
+            self.label_list = []
 
         if hasattr(parent, 'label_props') :
             self.label_props = parent.label_props.copy()
         else :
-            self.label_props = self.default_props()
+            self.label_props = self.default_label_props()
 
-
-        if cfg != None and 'text' in cfg :
-            self.label_props['text'] = cfg['text']
-
-        if cfg != None and 'relative' in cfg:
-            self.label_props['relative'] = cfg['relative']
-
-        if cfg != None and 'position' in cfg:
-            self.label_props['position'] = cfg['position']
-
-        if cfg != None and 'color' in cfg :
-            self.label_props['color'] = cfg['color']
-
-        if cfg != None and 'size' in cfg:
-            self.label_props['size'] = cfg['size']
-
-        if cfg != None and 'style' in cfg:
-            self.label_props['style'] = cfg['style']
+        property_list = ['text', 'relative', 'position', 'color', 'size',
+                         'style']
 
         if cfg != None:
+            for prop in property_list :
+                if prop in cfg:
+                    self.label_props[prop] = cfg[prop]
+
             file_str = [k for k in cfg if 'label' in k]
 
             if file_str :
                 for lab in file_str:
-                    self.labels.append(Label(cfg[lab], self))
+                    self.label_list.append(Label(cfg[lab], self))
         else :
             print("\n  +++ WARNING: naked 'label' field in the configuration",
                   "file +++\n")
@@ -870,7 +855,7 @@ class Label(object):
 
 
 
-    def default_props(self):
+    def default_label_props(self):
         """Define default values for label properties."""
 
         props = { 'color' : 'black',
@@ -884,50 +869,85 @@ class Label(object):
 
 
 
-class Markers(object) :
+class Marker(object) :
     """Class to define markers (including polygons)."""
     
-    def __init__ (self, cnfg, parent):
+    properties = ['type', 'edgecolor', 'linewidth', 'linestyle',
+                  'facecolor', 'show_label', 'color', 'weight', 'size']
+    defaults = ['', 'black', 1.0, 'solid', 'none', False, 'black',
+                'normal', 12]
+
+    
+    def __init__ (self, cfg, parent):
 
         self.wkdir = parent.wkdir
         
         if hasattr(parent, 'markers'):
-            self.marklist = parent.markers.marklist
-            list_markers = self.marklist
+            self.marklist = parent.markers.marklist.copy()
+            #list_markers = self.marklist
         else:
-            list_markers = []
-                                                                      
-        if cnfg != None :
-            file_str = [k for k in cnfg if 'file' in k]
+            #list_markers = []
+            self.marklist = []
 
-            if file_str :
-                if not hasattr(self, 'marklist'):
-                    self.marklist = []
+        if hasattr(parent, 'marker_props') :
+            self.marker_props = parent.marker_props.copy()
+        else :
+            self.marker_props = self.default_marker_props()
+
+            
+        if cfg != None :
+            for prop in self.properties :
+                if prop in cfg:
+                    self.marker_props[prop] = cfg[prop]
+
+
+            if 'file' in cfg:
+                fname = os.path.join(self.wkdir, cfg['file'])
+
+                #self.marklist.extend(self.read_markers(fname))
+                self.marker = self.read_markers(fname)
+
+            marker_str = [k for k in cfg if 'marker' in k]
+
+            if marker_str :
+                #if not hasattr(self, 'marklist'):
+                #    self.marklist = []
                     
-                for files in file_str :
-                    fname = os.path.join(self.wkdir, cnfg[files])
+                for mrk in marker_str :
+                    #fname = os.path.join(self.wkdir, cfg[files])
 
-                    self.marklist.extend(self.read_markers(fname))
+                    #self.marklist.extend(self.read_markers(fname))
+                    self.marklist.append(Marker(cfg[mrk], self))
 
-            else :
-                self.marklist = None
+            #else :
+            #    self.marklist = None
                 
 
+                
+    def default_marker_props(self):
+        """Define default values for marker properties."""
 
+        props = { key:value for key, value in
+                  zip(self.properties, self.defaults) }
+        return props
+
+
+    
     def add_markers(self, gc, i):
+        """Adds markers to the panel."""
 
-        lmarkers = self.marklist
+        marker_fields = self.marker
         
-        for mk in lmarkers:
-            type = mk['type']
+        for mk in marker_fields:
 
-            if type == 'polygon' :
+            if mk['type'] == 'polygon' :
                 gc[i].show_polygons(mk['corners'], **mk['style'])
+
+                if self.marker_props['show_label'] :
+                    gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
+                                    mk['id'], **mk['l_style'])
                 
-                gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
-                                mk['id'], **mk['l_style'])
-                
-            elif type == 'cross' :
+            elif mk['type'] == 'cross' :
                 gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
                                    edgecolor=mk[0]['color'],
                                    c=mk[0]['filled'],
@@ -937,10 +957,8 @@ class Markers(object) :
 
 
 
-            
     def read_markers(self, fname):
-        """ reads a markers file
-        """
+        """Reads a markers file."""
 
         tbl = ascii.read(fname, delimiter=" ", format="basic")
         
@@ -948,20 +966,24 @@ class Markers(object) :
         for marker in tbl:
 
             #if marker[0] == "cross" :
-            #    props = Markers.check_cross(marker)
+            #    props = Marker.check_cross(marker)
             #    if props != None :
             #        mark_list.append(props)
 
-            if marker['type'] == 'Polygon' :
-                properties = self.read_polygon(marker)
-                mark_list.append(properties)
+            if self.marker_props['type'] == 'polygon' :
+                if marker['type'] == 'Polygon' :
+                    properties = self.read_polygon(marker)
+                    mark_list.append(properties)
+                else :
+                    print("\n  +++ ERROR: marker type polygon reading a",
+                          "file without Polygons\n")
+                    sys.exit(1)
 
         return mark_list
 
     
     
-    @staticmethod
-    def read_polygon(it):
+    def read_polygon(self, it):
         """Read out the definition of a polygon marker."""
 
         attrib = {'type' : 'polygon', 'id' : it['id']}
@@ -980,53 +1002,29 @@ class Markers(object) :
             array_corners[p,:] = [float(coord_elements.pop(0)),
                                   float(coord_elements.pop(0))]
 
-        attrib['bcenter'] = [np.average(array_corners[:,0]),
-                             np.average(array_corners[:,1])]
-                                
         lcorners.append(array_corners)
         attrib['corners'] = lcorners
 
-        if it['edgecolor'] != "" :
-            edgecolor = it['edgecolor']
-        else :
-            edgecolor = 'black'
+        # baricenter
+        #
+        attrib['bcenter'] = [np.average(array_corners[:,0]),
+                             np.average(array_corners[:,1])]
 
-        if it['linewidth'] != "" :
-            linewidth = it['linewidth']
-        else :
-            linewidth = 1.0
-
-        if it['linestyle'] != "" :
-            linestyle = it['linestyle']
-        else :
-            linestyle = 'solid'
-
-        style = { 'edgecolor': edgecolor, 'linewidth' : linewidth,
-                  'linestyle' : linestyle}
+        style = {}
+        for ss in ['edgecolor', 'linewidth', 'linestyle', 'facecolor']:
+            style[ss] =  self.marker_props[ss]
         
         attrib['style'] = style
 
-        if it['labelcolor'] != "":
-            labelcolor = it['labelcolor']
-        else :
-            labelcolor = 'black'
-
-        if it['weight'] != "":
-            weight = it['weight']
-        else :
-            weight = 'normal'
+        labelstyle = {}
+        for ls in ['color', 'weight', 'size']:
+            labelstyle[ls] =  self.marker_props[ls]
             
-        if it['fontsize'] != "":
-            size = it['fontsize']
-        else :
-            size = 12
-            
-        labelstyle = {'color' : labelcolor, 'weight' : weight, 'size' : size}
-
         attrib['l_style'] = labelstyle
         
         return attrib
         
+
     
     @staticmethod
     def check_cross(it) :
