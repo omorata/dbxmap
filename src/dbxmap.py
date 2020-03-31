@@ -112,7 +112,7 @@ class Frame(object):
             self.view = View(cnfg['view'], self)
 
         if 'markers' in cnfg:
-            self.markers = Markers(cnfg['markers'], self)
+            self.markers = Marker(cnfg['markers'], self)
 
         if 'labels' in cnfg:
             self.labels = Label(cnfg['labels'], self)
@@ -192,9 +192,9 @@ class Panel(object) :
 
             
         if 'markers' in cnfg:
-            self.markers = Markers(cnfg['markers'], parent)
+            self.markers = Marker(cnfg['markers'], parent)
         elif hasattr(parent, 'markers'):
-            self.markers = Markers(None, parent)
+            self.markers = Marker(None, parent)
 
         if 'colorbar' in cnfg:
             self.colorbar = Colorbar(cnfg['colorbar'], self)
@@ -870,36 +870,71 @@ class Label(object):
 
 
 
-class Markers(object) :
+class Marker(object) :
     """Class to define markers (including polygons)."""
+
+    properties = ['type', 'edgecolor', 'linewidth', 'linestyle',
+                  'facecolor', 'show_label', 'labelcolor', 'weight',
+                  'fontsize']
+    defaults = ['', 'black', 1.0, 'solid', 'none', False, 'black',
+                'normal', 12]
+
     
-    def __init__ (self, cnfg, parent):
+    def __init__ (self, cfg, parent):
 
         self.wkdir = parent.wkdir
         
         if hasattr(parent, 'markers'):
-            self.marklist = parent.markers.marklist
-            list_markers = self.marklist
+            self.marklist = parent.markers.marklist.copy()
+            #list_markers = self.marklist
         else:
-            list_markers = []
-                                                                      
-        if cnfg != None :
-            file_str = [k for k in cnfg if 'file' in k]
+            #list_markers = []
+            self.marklist = []
 
-            if file_str :
-                if not hasattr(self, 'marklist'):
-                    self.marklist = []
+        if hasattr(parent, 'marker_props') :
+            self.marker_props = parent.marker_props.copy()
+        else :
+            self.marker_props = self.default_marker_props()
+
+            
+        if cfg != None :
+            for prop in self.properties :
+                if prop in cfg:
+                    self.marker_props[prop] = cfg[prop]
+
+
+            if 'file' in cfg:
+                fname = os.path.join(self.wkdir, cfg['file'])
+
+                self.marklist.extend(self.read_markers(fname))
+
+
+            marker_str = [k for k in cfg if 'marker' in k]
+
+            if marker_str :
+                #if not hasattr(self, 'marklist'):
+                #    self.marklist = []
                     
-                for files in file_str :
-                    fname = os.path.join(self.wkdir, cnfg[files])
+                for mrk in marker_str :
+                    #fname = os.path.join(self.wkdir, cfg[files])
 
-                    self.marklist.extend(self.read_markers(fname))
+                    #self.marklist.extend(self.read_markers(fname))
+                    self.marklist.append(Marker(cfg[mrk], self))
 
-            else :
-                self.marklist = None
+            #else :
+            #    self.marklist = None
                 
 
+                
+    def default_marker_props(self):
+        """Define default values for marker properties."""
 
+        props = { key:value for key, value in
+                  zip(self.properties, self.defaults))
+        return props
+
+
+    
     def add_markers(self, gc, i):
 
         lmarkers = self.marklist
@@ -923,10 +958,8 @@ class Markers(object) :
 
 
 
-            
     def read_markers(self, fname):
-        """ reads a markers file
-        """
+        """Reads a markers file."""
 
         tbl = ascii.read(fname, delimiter=" ", format="basic")
         
@@ -934,7 +967,7 @@ class Markers(object) :
         for marker in tbl:
 
             #if marker[0] == "cross" :
-            #    props = Markers.check_cross(marker)
+            #    props = Marker.check_cross(marker)
             #    if props != None :
             #        mark_list.append(props)
 
