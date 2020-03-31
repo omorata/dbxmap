@@ -15,6 +15,7 @@ allows to define, among other things:
   + plot beam size of the data
   + show a colorbar with the pixel data range
   + overlay polygons
+  + labels on the panels
 
 This is a work in progress and not all the planned functionalities are
 implemented yet
@@ -51,4 +52,13 @@ optional options that affect all the panels. Some fields are:
 - panel-xx :: proper definition of panels. All must start with the string
               /panel/ and then some identifier  
 **** panel definition
-***** dataset definition
+The /panel_xx/ definition controls how the data will be shown in each panel and
+which other objects may be in it: 
+- datasets :: by definition, each panel has to have the definition of at least
+              one dataset
+- colorbar :: showing the range of a pixel range
+- view :: showing the view of the panel. If present, modifies any previous
+          definitions
+- labels :: adds labels to the panels. If present, adds to previously defined
+            labels
+
