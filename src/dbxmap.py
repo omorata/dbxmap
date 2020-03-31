@@ -114,8 +114,10 @@ class Frame(object):
         if 'markers' in cnfg:
             self.markers = Markers(cnfg['markers'], self)
 
-        #if 'labels' in cnfg:
-        #    self.labels = Label(cnfg['labels'], self)
+        if 'labels' in cnfg:
+            self.labels = Label(cnfg['labels'], self)
+        else :
+            self.labels = None
 
         if 'pixrange' in cnfg:
             self.pixrange = Pixrange(cnfg['pixrange'], self)
@@ -179,14 +181,16 @@ class Panel(object) :
             self.view = View(None, parent)
             
             
-        if 'labels' in cnfg:
-            label_list = []
-            for l in cnfg['labels'] :
-                label_list.append(Label(cnfg['labels'][l]))
+        if hasattr(parent, 'labels') and parent.labels != None:
+            self.labels = parent.labels.labels.copy()
+            self.label_props = parent.labels.label_props.copy()
+        else :
+            self.labels = None
 
-            self.labels = label_list
-        else:
-            self.labels = []
+        if 'labels' in cnfg:
+            self.labels = Label(cnfg['labels'], self)
+        else :
+            self.labels = parent.labels
 
             
         if 'markers' in cnfg:
@@ -212,8 +216,14 @@ class Panel(object) :
 
             
     def add_panel(self, fig, gc, idx):
-        """ add a panel to the figure
+        """Adds a panel to the figure.
+
+        Arguments:
+            fig - figure to add the panel to
+            gc - list of panels
+            idx - index of panel
         """
+
         self.set_pixel_first()
 
         vw = self.view
@@ -247,10 +257,10 @@ class Panel(object) :
                     gc[idx].add_beam(**d.beam_shape, **d.beam_args)
                     
                 pass
-            
 
-        for lb in self.labels :
-            gc = lb.add_label(gc, idx)
+        if self.labels != None :
+            for lb in self.labels.labels :
+                gc = lb.add_label(gc, idx)
 
         if hasattr(self, 'markers') :
             a = self.markers
@@ -804,54 +814,76 @@ class Contour(object):
 
         
 class Label(object):
-    """ create a label
-    """
-    def __init__(self, cfg):
-        if 'text' in cfg :
-            self.text = cfg['text']
-        else :
-            self.text =""
+    """Create a label."""
 
-        if 'relative' in cfg:
-            self.relative = cfg['relative']
-        else :
-            self.relative = True
+    def __init__(self, cfg, parent):
 
-        if 'position' in cfg:
-            self.position = cfg['position']
-        else :
-            print(" ERROR")
+        if hasattr(parent, 'labels') and parent.labels != None :
+            self.labels = parent.labels.copy()
+        else:
+            self.labels = []
 
-        if 'color' in cfg :    
-            self.color = cfg['color']
+        if hasattr(parent, 'label_props') :
+            self.label_props = parent.label_props.copy()
         else :
-            self.color = 'black'
+            self.label_props = self.default_props()
 
-        if 'size' in cfg:
-            self.size = cfg['size']
+
+        if cfg != None and 'text' in cfg :
+            self.label_props['text'] = cfg['text']
+
+        if cfg != None and 'relative' in cfg:
+            self.label_props['relative'] = cfg['relative']
+
+        if cfg != None and 'position' in cfg:
+            self.label_props['position'] = cfg['position']
+
+        if cfg != None and 'color' in cfg :
+            self.label_props['color'] = cfg['color']
+
+        if cfg != None and 'size' in cfg:
+            self.label_props['size'] = cfg['size']
+
+        if cfg != None and 'style' in cfg:
+            self.label_props['style'] = cfg['style']
+
+        if cfg != None:
+            file_str = [k for k in cfg if 'label' in k]
+
+            if file_str :
+                for lab in file_str:
+                    self.labels.append(Label(cfg[lab], self))
         else :
-            self.size = 12
-
-        if 'style' in cfg:
-            self.style = cfg['style']
-        else :
-            self.style = 'normal'
-
+            print("\n  +++ WARNING: naked 'label' field in the configuration",
+                  "file +++\n")
 
             
+
     def add_label(self, pp, idx) :
-        pp[idx].add_label(self.position[0], self.position[1],
-                          self.text,
-                          relative=self.relative,
-                          color=self.color,
-                          size=self.size,
-                          style=self.style)
+        """Adds label to the panel."""
+
+        pp[idx].add_label(self.label_props['position'][0],
+                          self.label_props['position'][1],
+                          **self.label_props)
 
         return pp
 
 
 
-                                   
+    def default_props(self):
+        """Define default values for label properties."""
+
+        props = { 'color' : 'black',
+                  'relative' : False,
+                  'position' : [0.1, 0.9],
+                  'size' : 12,
+                  'style' :  'normal',
+                  'text' : "" }
+        return props
+
+
+
+
 class Markers(object) :
     """Class to define markers (including polygons)."""
     
