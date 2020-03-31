@@ -182,15 +182,13 @@ class Panel(object) :
             
             
         if hasattr(parent, 'labels') and parent.labels != None:
-            self.labels = parent.labels.labels.copy()
+            self.labels = parent.labels
             self.label_props = parent.labels.label_props.copy()
         else :
             self.labels = None
 
         if 'labels' in cnfg:
             self.labels = Label(cnfg['labels'], self)
-        else :
-            self.labels = parent.labels
 
             
         if 'markers' in cnfg:
@@ -259,7 +257,7 @@ class Panel(object) :
                 pass
 
         if self.labels != None :
-            for lb in self.labels.labels :
+            for lb in self.labels.label_list :
                 gc = lb.add_label(gc, idx)
 
         if hasattr(self, 'markers') :
@@ -819,40 +817,28 @@ class Label(object):
     def __init__(self, cfg, parent):
 
         if hasattr(parent, 'labels') and parent.labels != None :
-            self.labels = parent.labels.copy()
+            self.label_list = parent.labels.label_list.copy()
         else:
-            self.labels = []
+            self.label_list = []
 
         if hasattr(parent, 'label_props') :
             self.label_props = parent.label_props.copy()
         else :
             self.label_props = self.default_props()
 
-
-        if cfg != None and 'text' in cfg :
-            self.label_props['text'] = cfg['text']
-
-        if cfg != None and 'relative' in cfg:
-            self.label_props['relative'] = cfg['relative']
-
-        if cfg != None and 'position' in cfg:
-            self.label_props['position'] = cfg['position']
-
-        if cfg != None and 'color' in cfg :
-            self.label_props['color'] = cfg['color']
-
-        if cfg != None and 'size' in cfg:
-            self.label_props['size'] = cfg['size']
-
-        if cfg != None and 'style' in cfg:
-            self.label_props['style'] = cfg['style']
+        property_list = ['text', 'relative', 'position', 'color', 'size',
+                         'style']
 
         if cfg != None:
+            for prop in property_list :
+                if prop in cfg:
+                    self.label_props[prop] = cfg[prop]
+
             file_str = [k for k in cfg if 'label' in k]
 
             if file_str :
                 for lab in file_str:
-                    self.labels.append(Label(cfg[lab], self))
+                    self.label_list.append(Label(cfg[lab], self))
         else :
             print("\n  +++ WARNING: naked 'label' field in the configuration",
                   "file +++\n")
