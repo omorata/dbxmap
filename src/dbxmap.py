@@ -32,58 +32,69 @@ matplotlib.rcParams['text.usetex'] = True
 
 ##-- Class definitions -------------------------------------------------
 
-class Page(object):
-    """ define object Page
-    """ 
+class Figure(object):
+    """Define object Figure."""
+    
     def __init__(self, cnfg, dirs):
-        if 'outfile' in cnfg:
-            self.outfile = os.path.join(dirs['outdir'], cnfg['outfile'])
-        else :
-            self.outfile = os.path.join(dirs['outdir'], 'outfile.pdf')
 
-        if 'dpi' in cnfg :
-            self.dpi = cnfg['dpi']
+        if 'page' in cnfg :
+            fig_cfg= cnfg['page']
+            
+            if 'outfile' in fig_cfg:
+                self.outfile = os.path.join(dirs['outdir'], fig_cfg['outfile'])
+            else :
+                self.outfile = os.path.join(dirs['outdir'], 'outfile.pdf')
+
+            if 'dpi' in fig_cfg :
+                self.dpi = fig_cfg['dpi']
+            else:
+                self.dpi = 100
+
+            if 'size' in fig_cfg:
+                self.size = fig_cfg['size']
+            else :
+                self.size = [10,10]
+                    
+            if 'name' in fig_cfg:
+                self.name = fig_cfg['name']
+            else :
+                self.name = "NO_NAME"
+
+        if 'panels' in cnfg:
+            self.frame = Frame(cnfg['panels'], dirs)
         else:
-            self.dpi = 100
-
-        if 'size' in cnfg:
-            self.size = cnfg['size']
-        else :
-            self.size = [10,10]
-
-        if 'name' in cnfg:
-            self.name = cnfg['name']
+            print("ERROR: no Frame definition")
+            sys.exit(1)
 
 
             
     def create(self) :
-        """ create figure
-        """
+        """Create figure."""
+
+        print("  + creating figure [", self.name,"]")
         self.f = plt.figure(figsize=(self.size))
+        self.frame.add_panels(self.f)
         return self.f
 
 
 
     def f_print(self):
-        """ print figure
-        """
-        print("  + plotting output file:", self.outfile, "...")
+        """Print figure. """
+        
+        print("  + plotting output file:", self.outfile)
         self.f.savefig(self.outfile, dpi=self.dpi)
 
 
 
     def end(self):
-        """ ending comment
-        """
-        if hasattr(self, 'name') :
-            print("\n  ... figure <<", self.name, ">> done!\n")
-        else :
-            print("\n  ... done!\n")
+        """Ending comment."""
+        
+        print("\n  ... Figure [", self.name, "] done!\n")
     
 
 
         
-class DbxFig(object):
+class Frame(object):
     """ Class defining the elements of the figure
     """
     def __init__(self, cnfg, dirs):
@@ -122,7 +133,7 @@ class DbxFig(object):
             p_idx = 0
             
             for panel in panel_str:
-                print("  + adding panel:", panel, "...")
+                print("    + adding panel:", panel, "...")
                 panel_list.append(Panel(cnfg[panel], panel, p_idx, self))
                 p_idx += 1
 
@@ -139,7 +150,7 @@ class DbxFig(object):
         gc = []
         
         for p in self.panels :
-            print("  + plotting panel:", p.name, "...")
+            print("    + plotting panel:", p.name, "...")
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
 
@@ -1050,16 +1061,9 @@ def process_config(ifiles, dirs) :
         print("  + dumping configuration file in lofgfile:", logfile)
         dump_config(logfile, cfg)
         
-    if 'page' in cfg:
-        G = Page(cfg['page'], dirs)
-    else :
-        G = Page()
+    G = Figure(cfg, dirs)
 
-    if 'panels' in cfg:
-        P = DbxFig(cfg['panels'], dirs)
-
-    return G, P
-
+    return G
 
 
 def read_command_line() :
@@ -1100,16 +1104,14 @@ if __name__ == "__main__" :
 
     # process the configuration
     #
-    Page, Panels = process_config(files, dirs)
+    fig = process_config(files, dirs)
 
-
-    # make the figure
+    # plot the figure
     #
-    fig = Page.create()
+    fig.create()
 
-    Panels.add_panels(fig)
-
-    Page.f_print()
-    Page.end()
+    fig.f_print()
+    
+    fig.end()
     
 ##-- End of main -------------------------------------------------------
