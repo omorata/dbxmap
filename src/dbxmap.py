@@ -873,9 +873,10 @@ class Label(object):
 class Marker(object) :
     """Class to define markers (including polygons)."""
 
+    
+    
     properties = ['type', 'edgecolor', 'linewidth', 'linestyle',
-                  'facecolor', 'show_label', 'labelcolor', 'weight',
-                  'fontsize']
+                  'facecolor', 'show_label', 'color', 'weight', 'size']
     defaults = ['', 'black', 1.0, 'solid', 'none', False, 'black',
                 'normal', 12]
 
@@ -906,8 +907,8 @@ class Marker(object) :
             if 'file' in cfg:
                 fname = os.path.join(self.wkdir, cfg['file'])
 
-                self.marklist.extend(self.read_markers(fname))
-
+                #self.marklist.extend(self.read_markers(fname))
+                self.marker = self.read_markers(fname))
 
             marker_str = [k for k in cfg if 'marker' in k]
 
@@ -971,16 +972,20 @@ class Marker(object) :
             #    if props != None :
             #        mark_list.append(props)
 
-            if marker['type'] == 'Polygon' :
-                properties = self.read_polygon(marker)
-                mark_list.append(properties)
+            if self.marker_props['type'] == 'polygon' :
+                if marker['type'] == 'Polygon' :
+                    properties = self.read_polygon(marker)
+                    mark_list.append(properties)
+                else :
+                    print("\n  +++ ERROR: marker type polygon reading a",
+                          "file without Polygons\n")
+                    sys.exit(1)
 
         return mark_list
 
     
     
-    @staticmethod
-    def read_polygon(it):
+    def read_polygon(self, it):
         """Read out the definition of a polygon marker."""
 
         attrib = {'type' : 'polygon', 'id' : it['id']}
@@ -999,48 +1004,56 @@ class Marker(object) :
             array_corners[p,:] = [float(coord_elements.pop(0)),
                                   float(coord_elements.pop(0))]
 
-        attrib['bcenter'] = [np.average(array_corners[:,0]),
-                             np.average(array_corners[:,1])]
-                                
         lcorners.append(array_corners)
         attrib['corners'] = lcorners
 
-        if it['edgecolor'] != "" :
-            edgecolor = it['edgecolor']
-        else :
-            edgecolor = 'black'
+        # baricenter
+        #
+        attrib['bcenter'] = [np.average(array_corners[:,0]),
+                             np.average(array_corners[:,1])]
 
-        if it['linewidth'] != "" :
-            linewidth = it['linewidth']
-        else :
-            linewidth = 1.0
+        style = {}
+        for ss in ['edgecolor', 'linewidth', 'linestyle', 'facecolor']:
+            style[ss] =  self.marker_props[ss]
+        #if it['edgecolor'] != "" :
+        #    edgecolor = it['edgecolor']
+        #else :
+        #    edgecolor = 'black'
 
-        if it['linestyle'] != "" :
-            linestyle = it['linestyle']
-        else :
-            linestyle = 'solid'
+        #if it['linewidth'] != "" :
+        #    linewidth = it['linewidth']
+        #else :
+        #    linewidth = 1.0
 
-        style = { 'edgecolor': edgecolor, 'linewidth' : linewidth,
-                  'linestyle' : linestyle}
+        #if it['linestyle'] != "" :
+        #    linestyle = it['linestyle']
+        #else :
+        #    linestyle = 'solid'
+
+        #style = { 'edgecolor': edgecolor, 'linewidth' : linewidth,
+        #          'linestyle' : linestyle}
         
         attrib['style'] = style
 
-        if it['labelcolor'] != "":
-            labelcolor = it['labelcolor']
-        else :
-            labelcolor = 'black'
+        #if it['labelcolor'] != "":
+        #    labelcolor = it['labelcolor']
+        #else :
+        #    labelcolor = 'black'
 
-        if it['weight'] != "":
-            weight = it['weight']
-        else :
-            weight = 'normal'
+        #if it['weight'] != "":
+        #    weight = it['weight']
+        #else :
+        #    weight = 'normal'
             
-        if it['fontsize'] != "":
-            size = it['fontsize']
-        else :
-            size = 12
+        #if it['fontsize'] != "":
+        #    size = it['fontsize']
+        #else :
+        #    size = 12
+        labelstyle = {}
+        for ls in ['color', 'weight', 'size']:
+            labelstyle[ls] =  self.marker_props[ls]
             
-        labelstyle = {'color' : labelcolor, 'weight' : weight, 'size' : size}
+        #labelstyle = {'color' : labelcolor, 'weight' : weight, 'size' : size}
 
         attrib['l_style'] = labelstyle
         
