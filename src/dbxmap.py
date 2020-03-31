@@ -216,8 +216,14 @@ class Panel(object) :
 
             
     def add_panel(self, fig, gc, idx):
-        """ add a panel to the figure
+        """Adds a panel to the figure.
+
+        Arguments:
+            fig - figure to add the panel to
+            gc - list of panels
+            idx - index of panel
         """
+
         self.set_pixel_first()
 
         vw = self.view
@@ -815,48 +821,31 @@ class Label(object):
         if hasattr(parent, 'labels') and parent.labels != None :
             self.labels = parent.labels.copy()
         else:
-            self.labels = None
+            self.labels = []
 
         if hasattr(parent, 'label_props') :
             self.label_props = parent.label_props.copy()
         else :
             self.label_props = self.default_props()
 
+
         if cfg != None and 'text' in cfg :
-            self.text = cfg['text']
-            self.label_props['text'] = self.text
-        else :
-            self.text = self.label_props['text']
+            self.label_props['text'] = cfg['text']
 
         if cfg != None and 'relative' in cfg:
-            self.relative = cfg['relative']
-            self.label_props['relative'] = self.relative
-        else :
-            self.relative = self.label_props['relative']
+            self.label_props['relative'] = cfg['relative']
 
         if cfg != None and 'position' in cfg:
-            self.position = cfg['position']
-            self.label_props['position'] = self.position.copy()
-        else :
-            self.position = self.label_props['position'].copy()
+            self.label_props['position'] = cfg['position']
 
         if cfg != None and 'color' in cfg :
-            self.color = cfg['color']
-            self.label_props['color'] = self.color
-        else :
-            self.color = self.label_props['color']
+            self.label_props['color'] = cfg['color']
 
         if cfg != None and 'size' in cfg:
-            self.size = cfg['size']
-            self.label_props['size'] = self.size
-        else :
-            self.size = self.label_props['size']
+            self.label_props['size'] = cfg['size']
 
         if cfg != None and 'style' in cfg:
-            self.style = cfg['style']
-            self.label_props['style'] = self.style
-        else :
-            self.style = self.label_props['style']
+            self.label_props['style'] = cfg['style']
 
         if cfg != None:
             file_str = [k for k in cfg if 'label' in k]
