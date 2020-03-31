@@ -934,20 +934,20 @@ class Marker(object) :
 
     
     def add_markers(self, gc, i):
+        """Adds markers to the panel."""
 
         marker_fields = self.marker
         
         for mk in marker_fields:
-            type = mk['type']
 
-            if type == 'polygon' :
+            if mk['type'] == 'polygon' :
                 gc[i].show_polygons(mk['corners'], **mk['style'])
 
                 if self.marker_props['show_label'] :
                     gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
                                     mk['id'], **mk['l_style'])
                 
-            elif type == 'cross' :
+            elif mk['type'] == 'cross' :
                 gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
                                    edgecolor=mk[0]['color'],
                                    c=mk[0]['filled'],
