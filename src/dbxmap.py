@@ -824,7 +824,7 @@ class Label(object):
         if hasattr(parent, 'label_props') :
             self.label_props = parent.label_props.copy()
         else :
-            self.label_props = self.default_props()
+            self.label_props = self.default_label_props()
 
         property_list = ['text', 'relative', 'position', 'color', 'size',
                          'style']
@@ -856,7 +856,7 @@ class Label(object):
 
 
 
-    def default_props(self):
+    def default_label_props(self):
         """Define default values for label properties."""
 
         props = { 'color' : 'black',
