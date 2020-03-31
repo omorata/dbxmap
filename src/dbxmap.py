@@ -260,11 +260,10 @@ class Panel(object) :
             for lb in self.labels.label_list :
                 gc = lb.add_label(gc, idx)
 
-        if hasattr(self, 'markers') :
-            a = self.markers
-            a.add_markers(gc, idx)
+        if self.markers != None:
+            for mk in self.markers.marklist :
+                mk.add_markers(gc, idx)
 
-            
         if hasattr(self, 'colorbar'):
             self.set_colorbar(gc[idx])
 
@@ -872,8 +871,6 @@ class Label(object):
 
 class Marker(object) :
     """Class to define markers (including polygons)."""
-
-    
     
     properties = ['type', 'edgecolor', 'linewidth', 'linestyle',
                   'facecolor', 'show_label', 'color', 'weight', 'size']
@@ -908,7 +905,7 @@ class Marker(object) :
                 fname = os.path.join(self.wkdir, cfg['file'])
 
                 #self.marklist.extend(self.read_markers(fname))
-                self.marker = self.read_markers(fname))
+                self.marker = self.read_markers(fname)
 
             marker_str = [k for k in cfg if 'marker' in k]
 
@@ -931,23 +928,24 @@ class Marker(object) :
         """Define default values for marker properties."""
 
         props = { key:value for key, value in
-                  zip(self.properties, self.defaults))
+                  zip(self.properties, self.defaults) }
         return props
 
 
     
     def add_markers(self, gc, i):
 
-        lmarkers = self.marklist
+        marker_fields = self.marker
         
-        for mk in lmarkers:
+        for mk in marker_fields:
             type = mk['type']
 
             if type == 'polygon' :
                 gc[i].show_polygons(mk['corners'], **mk['style'])
-                
-                gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
-                                mk['id'], **mk['l_style'])
+
+                if self.marker_props['show_label'] :
+                    gc[i].add_label(mk['bcenter'][0], mk['bcenter'][1],
+                                    mk['id'], **mk['l_style'])
                 
             elif type == 'cross' :
                 gc[i].show_markers(mk[0]['x'].degree, mk[0]['y'].degree,
@@ -1015,50 +1013,18 @@ class Marker(object) :
         style = {}
         for ss in ['edgecolor', 'linewidth', 'linestyle', 'facecolor']:
             style[ss] =  self.marker_props[ss]
-        #if it['edgecolor'] != "" :
-        #    edgecolor = it['edgecolor']
-        #else :
-        #    edgecolor = 'black'
-
-        #if it['linewidth'] != "" :
-        #    linewidth = it['linewidth']
-        #else :
-        #    linewidth = 1.0
-
-        #if it['linestyle'] != "" :
-        #    linestyle = it['linestyle']
-        #else :
-        #    linestyle = 'solid'
-
-        #style = { 'edgecolor': edgecolor, 'linewidth' : linewidth,
-        #          'linestyle' : linestyle}
         
         attrib['style'] = style
 
-        #if it['labelcolor'] != "":
-        #    labelcolor = it['labelcolor']
-        #else :
-        #    labelcolor = 'black'
-
-        #if it['weight'] != "":
-        #    weight = it['weight']
-        #else :
-        #    weight = 'normal'
-            
-        #if it['fontsize'] != "":
-        #    size = it['fontsize']
-        #else :
-        #    size = 12
         labelstyle = {}
         for ls in ['color', 'weight', 'size']:
             labelstyle[ls] =  self.marker_props[ls]
             
-        #labelstyle = {'color' : labelcolor, 'weight' : weight, 'size' : size}
-
         attrib['l_style'] = labelstyle
         
         return attrib
         
+
     
     @staticmethod
     def check_cross(it) :
