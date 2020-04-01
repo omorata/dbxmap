@@ -116,7 +116,7 @@ class Frame(object):
             self.markers = mrk.Marker(cnfg['markers'], self)
 
         if 'labels' in cnfg:
-            self.labels = Label(cnfg['labels'], self)
+            self.labels = mrk.Label(cnfg['labels'], self)
         else :
             self.labels = None
 
@@ -189,7 +189,7 @@ class Panel(object) :
             self.labels = None
 
         if 'labels' in cnfg:
-            self.labels = Label(cnfg['labels'], self)
+            self.labels = mrk.Label(cnfg['labels'], self)
 
             
         if 'markers' in cnfg:
@@ -808,68 +808,6 @@ class Contour(object):
             lv += lev_list[2]
 
         self.add_levels(gen_levs)
-            
-
-        
-class Label(object):
-    """Create a label."""
-
-    def __init__(self, cfg, parent):
-
-        if hasattr(parent, 'labels') and parent.labels != None :
-            self.label_list = parent.labels.label_list.copy()
-        else:
-            self.label_list = []
-
-        if hasattr(parent, 'label_props') :
-            self.label_props = parent.label_props.copy()
-        else :
-            self.label_props = self.default_label_props()
-
-        property_list = ['text', 'relative', 'position', 'color', 'size',
-                         'style']
-
-        if cfg != None:
-            for prop in property_list :
-                if prop in cfg:
-                    self.label_props[prop] = cfg[prop]
-
-            file_str = [k for k in cfg if 'label' in k]
-
-            if file_str :
-                for lab in file_str:
-                    self.label_list.append(Label(cfg[lab], self))
-        else :
-            print("\n  +++ WARNING: naked 'label' field in the configuration",
-                  "file +++\n")
-
-            
-
-    def add_label(self, pp, idx) :
-        """Adds label to the panel."""
-
-        pp[idx].add_label(self.label_props['position'][0],
-                          self.label_props['position'][1],
-                          **self.label_props)
-
-        return pp
-
-
-
-    def default_label_props(self):
-        """Define default values for label properties."""
-
-        props = { 'color' : 'black',
-                  'relative' : False,
-                  'position' : [0.1, 0.9],
-                  'size' : 12,
-                  'style' :  'normal',
-                  'text' : "" }
-        return props
-
-
-
-
 
 ##-- End of class definitions ------------------------------------------
         
