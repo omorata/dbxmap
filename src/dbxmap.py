@@ -873,9 +873,9 @@ class Marker(object) :
     
     properties = ['type', 'edgecolor', 'linewidth', 'linestyle',
                   'facecolor', 'show_label', 'color', 'weight', 'size',
-                  'lpad', 'alpha', 'zorder']
+                  'lpad', 'alpha', 'zorder', 'linecolor']
     defaults = ['', 'black', 1.0, 'solid', 'none', False, 'black',
-                'normal', 12, [0,0], 1.0, 50]
+                'normal', 12, [0,0], 1.0, 50, 'black']
 
     # split them style, l_style, and the rest
     
@@ -939,6 +939,10 @@ class Marker(object) :
                                    mk['maj'], mk['min'], angle=mk['pa'],
                                    **mk['style'])
 
+            elif mk['type'] == "line" :
+                gc[i].show_lines(mk['line'], color=mk['linecolor'],
+                                 **mk['style'])
+
             else :
                 gc[i].show_markers(mk['x'], mk['y'],
                                    marker=mk['sym'],
@@ -973,6 +977,8 @@ class Marker(object) :
 
             elif marker['type'] == 'ellipse' :
                 properties = self.read_ellipse(marker)
+            elif marker['type'] == 'line' :
+                properties = self.read_line(marker)
             else:
                 properties = self.read_symbol(marker)
 
@@ -1088,6 +1094,34 @@ class Marker(object) :
             attrib['maj'] = float(size[0]) / 3600.
             attrib['min'] = float(size[1]) / 3600.
             attrib['pa'] = float(size[2])
+
+        return attrib
+
+
+
+    def read_line(self, it):
+        """Read the definition of a line.
+
+        it assumes the major and minor axes are in arcsec.
+        """
+
+        attrib = {'id' : it['id'], 'type' : it['type'] }
+
+        center = it['center'].split(" ")
+        size = it['size'].split(" ")
+
+        if it['coords'] == 'world_deg' :
+            attrib['x'] = float(center[0])
+            attrib['y'] = float(center[1])
+
+            array = np.array([
+                [attrib['x'], float(size[0])],
+                [attrib['y'], float(size[1])]
+            ])
+
+        attrib['line'] = [array]
+
+        attrib['linecolor'] = self.marker_props['linecolor']
 
         return attrib
 
