@@ -873,9 +873,9 @@ class Marker(object) :
     
     properties = ['type', 'edgecolor', 'linewidth', 'linestyle',
                   'facecolor', 'show_label', 'color', 'weight', 'size',
-                  'lpad', 'alpha']
+                  'lpad', 'alpha', 'zorder']
     defaults = ['', 'black', 1.0, 'solid', 'none', False, 'black',
-                'normal', 12, [0,0], 1.0]
+                'normal', 12, [0,0], 1.0, 50]
 
     # split them style, l_style, and the rest
     
@@ -934,24 +934,23 @@ class Marker(object) :
             if mk['type'] == 'polygon' :
                 gc[i].show_polygons(mk['corners'], **mk['style'])
 
-                if self.marker_props['show_label'] :
-                    x = mk['bcenter'][0] + mk['lpad'][0] / 3600.
-                    y = mk['bcenter'][1] + mk['lpad'][1] / 3600.
+            elif mk['type'] == "ellipse" :
+                gc[i].show_ellipses(mk['x'], mk['y'],
+                                   mk['maj'], mk['min'], angle=mk['pa'],
+                                   **mk['style'])
 
-                    gc[i].add_label(x, y, mk['id'], **mk['l_style'])
-                
             else :
                 gc[i].show_markers(mk['x'], mk['y'],
                                    marker=mk['sym'],
                                    s=mk['size'],
-                                   **mk['style'],
-                                   c=mk['c'])
+                                   c=mk['c'],
+                                   **mk['style'])
 
-                if self.marker_props['show_label'] :
-                    x = mk['x'] + mk['lpad'][0] / 3600.
-                    y = mk['y'] + mk['lpad'][1] / 3600.
+            if self.marker_props['show_label'] :
+                x = mk['x'] + mk['lpad'][0] / 3600.
+                y = mk['y'] + mk['lpad'][1] / 3600.
 
-                    gc[i].add_label(x, y, mk['id'], **mk['l_style'])
+                gc[i].add_label(x, y, mk['id'], **mk['l_style'])
 
 
 
@@ -972,6 +971,8 @@ class Marker(object) :
                           "file without Polygons\n")
                     sys.exit(1)
 
+            elif marker['type'] == 'ellipse' :
+                properties = self.read_ellipse(marker)
             else:
                 properties = self.read_symbol(marker)
 
@@ -991,7 +992,7 @@ class Marker(object) :
 
         style = {}
         for ss in ['edgecolor', 'linewidth', 'linestyle', 'facecolor',
-                   'alpha']:
+                   'alpha', 'zorder']:
             style[ss] =  self.marker_props[ss]
 
         attrib['style'] = style
@@ -1032,8 +1033,8 @@ class Marker(object) :
 
         # baricenter
         #
-        attrib['bcenter'] = [np.average(array_corners[:,0]),
-                             np.average(array_corners[:,1])]
+        attrib['x'] = np.average(array_corners[:,0])
+        attrib['y'] = np.average(array_corners[:,1])
 
         return attrib
 
@@ -1064,6 +1065,29 @@ class Marker(object) :
             attrib['c'] = None
         else :
             attrib['c'] = self.marker_props['facecolor']
+
+        return attrib
+
+
+
+    def read_ellipse(self, it):
+        """Read the definition of a ellipse.
+
+        it assumes the major and minor axes are in arcsec.
+        """
+
+        attrib = {'id' : it['id'], 'type' : it['type'] }
+
+        center = it['center'].split(" ")
+        if it['coords'] == 'world_deg' :
+            attrib['x'] = float(center[0])
+            attrib['y'] = float(center[1])
+
+        size = it['size'].split(" ")
+        if it['coords'] == 'world_deg' :
+            attrib['maj'] = float(size[0]) / 3600.
+            attrib['min'] = float(size[1]) / 3600.
+            attrib['pa'] = float(size[2])
 
         return attrib
 
