@@ -12,7 +12,7 @@ import os
 
 import yaml
 
-import dbxmap as fw
+import framework as fw
 
 
 ##-- Functions ---------------------------------------------------------
