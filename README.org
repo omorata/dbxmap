@@ -16,6 +16,7 @@ allows to define, among other things:
   + show a colorbar with the pixel data range
   + overlay polygons
   + labels on the panels
+  + markers on the plot
 
 This is a work in progress and not all the planned functionalities are
 implemented yet
@@ -23,11 +24,11 @@ implemented yet
 
 ** configuration file
 
-The plotting of the data is controled by a YAML configuration file, which
-should contain the definition of all the elements that should be in the map.
-The upper structure of the file is divided into a *page* section containing the
-general definition of the figure and a *panels* section with the information
-that will be contained into the panel(s) of the plot.
+The data is plotted using a YAML configuration file, which contains the
+definition of all the elements that should be in the map. The upper structure
+of the file is divided into a *page* section containing the general definition
+of the figure and a *panels* section with the information that will be contained
+into the panel(s) of the plot.
 
 *** Page section
 It may contain the entries:
@@ -51,6 +52,7 @@ optional options that affect all the panels. Some fields are:
 - markers :: markers defined in all panels.
 - panel-xx :: proper definition of panels. All must start with the string
               /panel/ and then some identifier  
+
 **** panel definition
 The /panel_xx/ definition controls how the data will be shown in each panel and
 which other objects may be in it: 
