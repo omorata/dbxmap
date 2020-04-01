@@ -8,12 +8,14 @@
 ##
 ##
 import argparse
-import yaml
 import os
-import dbxmap as fw
+
+import yaml
+
+import framework as fw
+
 
 ##-- Functions ---------------------------------------------------------
-
 
 def read_configuration_file(cfgfile):
     """ Read the YAML configuration file
