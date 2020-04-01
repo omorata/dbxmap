@@ -8,10 +8,10 @@
 ##
 
 import os
-from astropy.io import ascii
-import numpy as np
 import sys
 
+from astropy.io import ascii
+import numpy as np
 
 
 class Marker(object) :
