@@ -250,10 +250,8 @@ class Panel(object) :
                 pass
 
         if self.axes != None:
-
-            self.set_axes(gc, idx)
-
-
+            ax = self.axes
+            ax.set_axes(gc, idx)
 
         if self.labels != None :
             for lb in self.labels.label_list :
@@ -295,43 +293,6 @@ class Panel(object) :
 
 
         
-    def set_axes(self, gc, ix):
-        """Sets axes properties."""
-
-        ax = self.axes
-
-        if hasattr(ax, 'xspacing'):
-            gc[ix].ticks.set_xspacing(ax.xspacing)
-        if hasattr(ax, 'yspacing'):
-            gc[ix].ticks.set_yspacing(ax.yspacing)
-
-        if hasattr(ax, 'xminor_freq'):
-            if hasattr(ax, 'yminor_freq'):
-                gc[ix].ticks.set_minor_frequency(ax.xminor_freq,ax.yminor_freq)
-            else :
-                gc[ix].ticks.set_minor_frequency(ax.xminor_freq)
-
-
-        if hasattr(ax, 'tick_color'):
-            gc[ix].ticks.set_color(ax.tick_color)
-
-        if hasattr(ax, 'tick_length'):
-            gc[ix].ticks.set_length(ax.tick_length)
-
-        if hasattr(ax, 'tick_direction'):
-            print(ax.tick_direction)
-            gc[ix].ticks.set_tick_direction(ax.tick_direction)
-
-
-        if hasattr(ax, 'xhide'):
-            if ax.xhide :
-                gc[ix].ticks.hide_x()
-
-        if hasattr(ax, 'yhide'):
-            if ax.yhide :
-                gc[ix].ticks.hide_y()
-
-
                 
 class View(object) :
     """ Create a view
@@ -395,44 +356,97 @@ class Axes(object):
 
     def __init__(self, cfg, parent):
 
-        if cfg != None and 'minor_freq' in cfg :
-            self.xminor_freq = cfg['minor_freq']
+        #if cfg != None and 'axes_labels' in cfg
+        #    self.read_axes_labels(cfg['axes_labels'])
 
-        if cfg != None and 'tick_color' in cfg :
-            self.tick_color = cfg['tick_color']
+        #if cfg != None and 'tick_labels' in cfg:
+        #    self.read_tick_labels(cfg['tick_labels'])
 
-        if cfg != None and 'tick_length' in cfg :
-            self.tick_length = cfg['tick_length']
+        if cfg != None and 'ticks' in cfg :
+            self.read_ticks(cfg['ticks'])
 
-        if cfg != None and 'tick_direction' in cfg :
-            self.tick_direction = cfg['tick_direction']
 
-        if cfg != None and 'ticks_hide' in cfg:
-            if cfg['ticks_hide']:
-                self.xhide = True
-                self.yhide = True
-                
 
-        if cfg != None and 'ticks_x' in cfg:
-            tx = cfg['ticks_x']
+    def read_ticks (self, tx):
 
-            if 'spacing' in tx :
-                self.xspacing = tx['spacing']
+            if 'xspacing' in tx :
+                self.xspacing = tx['xspacing']
 
-            if 'minor_freq' in tx:
-                self.xminor_freq = tx['minor_freq']
+            if 'xminor_freq' in tx:
+                self.xminor_freq = tx['xminor_freq']
+
+            if 'yspacing' in tx :
+                self.yspacing = tx['yspacing']
+
+            if 'yminor_freq' in tx:
+                self.yminor_freq = tx['yminor_freq']
+
+            if 'color' in tx:
+                self.tick_color = tx['color']
+
+            if 'length' in tx:
+                self.tick_length = tx['length']
+
+            if 'linewidth' in tx:
+                self.tick_linewidth = tx['linewidth']
+
+            if 'direction' in tx:
+                self.tick_direction = tx['direction']
 
             if 'hide' in tx:
-                self.xhide = tx['hide']
+                self.tick_xhide = tx['hide']
+                self.tick_yhide = tx['hide']
 
-        if cfg != None and 'ticks_y' in cfg:
-            ty = cfg['ticks_y']
+            if 'xhide' in tx:
+                self.tick_xhide = tx['xhide']
 
-            if 'spacing' in ty :
-                self.yspacing = ty['spacing']
+            if 'yhide' in tx:
+                self.tick_yhide = tx['yhide']
 
-            if 'minor_freq' in ty:
-                self.yminor_freq = ty['minor_freq']
 
-            if 'hide' in ty:
-                self.yhide = ty['hide']
+
+    def set_axes(self, gc, ix):
+        """Sets axes properties."""
+
+        #self.set_axes_labels(gc, ix)
+        #self.set_tick_labels(gc, ix)
+        self.set_ticks(gc,ix)
+
+
+
+    def set_ticks(self, gc, ix):
+        """Set tick properties."""
+
+        if hasattr(self, 'xspacing'):
+            gc[ix].ticks.set_xspacing(self.xspacing)
+        if hasattr(self, 'yspacing'):
+            gc[ix].ticks.set_yspacing(self.yspacing)
+
+        if hasattr(self, 'xminor_freq'):
+            if hasattr(self, 'yminor_freq'):
+                gc[ix].ticks.set_minor_frequency(self.xminor_freq,
+                                                 self.yminor_freq)
+            else :
+                gc[ix].ticks.set_minor_frequency(self.xminor_freq)
+
+
+        if hasattr(self, 'tick_color'):
+            gc[ix].ticks.set_color(self.tick_color)
+
+        if hasattr(self, 'tick_length'):
+            gc[ix].ticks.set_length(self.tick_length)
+
+        if hasattr(self, 'tick_linewidth'):
+            gc[ix].ticks.set_linewidth(self.tick_linewidth)
+
+        if hasattr(self, 'tick_direction'):
+            gc[ix].ticks.set_tick_direction(self.tick_direction)
+
+
+        if hasattr(self, 'tick_xhide'):
+            if self.tick_xhide :
+                gc[ix].ticks.hide_x()
+
+        if hasattr(self, 'tick_yhide'):
+            if self.tick_yhide :
+                gc[ix].ticks.hide_y()
