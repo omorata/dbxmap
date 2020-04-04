@@ -100,7 +100,7 @@ class Marker(object) :
                 x = mk['x'] + mk['lpad'][0] / 3600.
                 y = mk['y'] + mk['lpad'][1] / 3600.
 
-                gc[i].add_label(x, y, mk['id'], **mk['l_style'])
+                gc[i].add_label(x, y, mk['id'], **mk['l_style'], clip_on=True)
 
 
 
