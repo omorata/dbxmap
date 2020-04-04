@@ -254,7 +254,7 @@ class Panel(object) :
 
         if self.axes != None:
             ax = self.axes
-            ax.set_axes(gc, idx)
+            ax.set_axes(gc[idx])
 
         if self.labels != None :
             for lb in self.labels.label_list :
@@ -328,8 +328,6 @@ class View(object) :
                     self.box = parent.view.box
                 except AttributeError:
                     self.box = None
-
-        
             
 
         if cnfg != None and 'center' in cnfg:
@@ -478,80 +476,81 @@ class Axes(object):
 
 
 
-    def set_axes(self, gc, ix):
+    def set_axes(self, g):
         """Sets axes properties."""
 
-        self.set_axes_labels(gc, ix)
-        #self.set_tick_labels(gc, ix)
-        self.set_ticks(gc,ix)
+        self.set_axes_labels(g.axis_labels)
+        #self.set_tick_labels(gc[ix].tick_labels)
+        self.set_ticks(g.ticks)
 
 
 
-    def set_axes_labels(self, gc, ix) :
+    #def set_axes_labels(self, gc, ix) :
+    def set_axes_labels(self, gp) :
         """Set axes labels."""
 
         if hasattr(self, 'axis_font'):
-            gc[ix].axis_labels.set_font(**self.axis_font)
+            gp.set_font(**self.axis_font)
 
         if hasattr(self, 'xposition'):
-            gc[ix].axis_labels.set_xposition(self.xposition)
+            gp.set_xposition(self.xposition)
 
         if hasattr(self, 'yposition'):
-            gc[ix].axis_labels.set_yposition(self.yposition)
+            gp.set_yposition(self.yposition)
 
         if hasattr(self, 'xpad'):
-            gc[ix].axis_labels.set_xpad(self.xpad)
+            gp.set_xpad(self.xpad)
 
         if hasattr(self, 'ypad'):
-            gc[ix].axis_labels.set_ypad(self.ypad)
+            gp.set_ypad(self.ypad)
 
         if hasattr(self, 'xtext'):
-            gc[ix].axis_labels.set_xtext(self.xtext)
+            gp.set_xtext(self.xtext)
 
         if hasattr(self, 'ytext'):
-            gc[ix].axis_labels.set_ytext(self.ytext)
+            gp.set_ytext(self.ytext)
 
         if hasattr(self, 'axis_xhide'):
             if self.axis_xhide:
-                gc[ix].axis_labels.hide_x()
+                gp.hide_x()
 
         if hasattr(self, 'axis_yhide'):
             if self.axis_yhide:
-                gc[ix].axis_labels.hide_y()
+                gp.hide_y()
 
 
 
-    def set_ticks(self, gc, ix):
+    def set_ticks(self, gp):
         """Set tick properties."""
 
         if hasattr(self, 'xspacing'):
-            gc[ix].ticks.set_xspacing(self.xspacing)
+            gp.set_xspacing(self.xspacing)
         if hasattr(self, 'yspacing'):
-            gc[ix].ticks.set_yspacing(self.yspacing)
+            gp.set_yspacing(self.yspacing)
 
         if hasattr(self, 'xminor_freq'):
             if hasattr(self, 'yminor_freq'):
-                gc[ix].ticks.set_minor_frequency(self.xminor_freq,
+                gp.set_minor_frequency(self.xminor_freq,
                                                  self.yminor_freq)
             else :
-                gc[ix].ticks.set_minor_frequency(self.xminor_freq)
+                gp.set_minor_frequency(self.xminor_freq)
 
         if hasattr(self, 'tick_color'):
-            gc[ix].ticks.set_color(self.tick_color)
+            gp.set_color(self.tick_color)
 
         if hasattr(self, 'tick_length'):
-            gc[ix].ticks.set_length(self.tick_length)
+            gp.set_length(self.tick_length)
 
         if hasattr(self, 'tick_linewidth'):
-            gc[ix].ticks.set_linewidth(self.tick_linewidth)
+            gp.set_linewidth(self.tick_linewidth)
 
         if hasattr(self, 'tick_direction'):
-            gc[ix].ticks.set_tick_direction(self.tick_direction)
+            gp.set_tick_direction(self.tick_direction)
 
         if hasattr(self, 'tick_xhide'):
             if self.tick_xhide :
-                gc[ix].ticks.hide_x()
+                gp.hide_x()
 
         if hasattr(self, 'tick_yhide'):
             if self.tick_yhide :
-                gc[ix].ticks.hide_y()
+                gp.hide_y()
