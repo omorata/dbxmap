@@ -310,7 +310,7 @@ class Label(object):
             self.label_props = self.default_label_props()
 
         property_list = ['text', 'relative', 'position', 'color', 'size',
-                         'style']
+                         'style', 'family', 'variant', 'stretch', 'weight']
 
         if cfg != None:
             for prop in property_list :
