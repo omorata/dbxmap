@@ -362,18 +362,33 @@ class Axes(object):
                 self.read_axes_labels(cfg['axes_labels'], parent.axes)
             else :
                 self.read_axes_labels(cfg['axes_labels'], None)
+        else:
+            try:
+                self.read_axes_labels(None, parent.axes)
+            except AttributeError:
+                pass
 
         if cfg != None and 'tick_labels' in cfg:
             if hasattr(parent, 'axes'):
                 self.read_tick_labels(cfg['tick_labels'], parent.axes)
             else :
                 self.read_tick_labels(cfg['tick_labels'], None)
+        else:
+            try:
+                self.read_tick_labels(None, parent.axes)
+            except AttributeError:
+                pass
 
         if cfg != None and 'ticks' in cfg :
             if hasattr(parent, 'axes'):
                 self.read_ticks(cfg['ticks'], parent.axes)
             else :
                 self.read_ticks(cfg['ticks'], None)
+        else:
+            try:
+                self.read_ticks(None, parent.axes)
+            except AttributeError:
+                pass
 
 
 
@@ -381,7 +396,7 @@ class Axes(object):
         """Read the configuration labels for the axes labels.""" 
 
         for at in ['xposition', 'yposition', 'xpad', 'ypad', 'xtext', 'ytext']:
-            if at in ax:
+            if ax != None and at in ax:
                 setattr(self, at, ax[at])
             elif hasattr(parent, at):
                 setattr(self, at, getattr(parent, at))
@@ -392,7 +407,7 @@ class Axes(object):
         else :
             self.axis_font = {}
 
-        if 'font' in ax:
+        if ax != None and 'font' in ax:
             ff = ax['font']
 
             for prop in ['family', 'style', 'size', 'variant', 'stretch',
@@ -400,12 +415,12 @@ class Axes(object):
                 if prop in ff :
                     self.axis_font[prop] = ff[prop]
 
-        if 'hide' in ax:
+        if ax != None and 'hide' in ax:
             self.axis_xhide = ax['hide']
             self.axis_yhide = ax['hide']
 
         for at in ['xhide', 'yhide']:
-            if at in ax :
+            if ax != None and at in ax :
                 setattr(self, 'axis_'+at, ax[at])
             elif hasattr(parent, 'axis_'+at):
                 setattr(self, 'axis_'+at, getattr(parent, 'axis_'+at))
@@ -413,73 +428,37 @@ class Axes(object):
 
 
     def read_ticks (self, tx, parent):
+        """Read the configuration for ticks."""
 
-        if 'xspacing' in tx :
-            self.xspacing = tx['xspacing']
-        elif hasattr(parent, 'xspacing'):
-            self.xspacing = parent.xspacing
-
-        if 'xminor_freq' in tx:
-            self.xminor_freq = tx['xminor_freq']
-        elif hasattr(parent, 'xminor_freq'):
-            self.xminor_freq = parent.xminor_freq
-
-        if 'yspacing' in tx :
-            self.yspacing = tx['yspacing']
-        elif hasattr(parent, 'yspacing'):
-            self.yspacing = parent.yspacing
-
-        if 'yminor_freq' in tx:
-            self.yminor_freq = tx['yminor_freq']
-        elif hasattr(parent, 'yminor_freq'):
-            self.yminor_freq = parent.yminor_freq
-
-        if 'color' in tx:
-            self.tick_color = tx['color']
-        elif hasattr(parent, 'tick_color'):
-            self.tick_color = parent.tick_color
-
-        if 'length' in tx:
-            self.tick_length = tx['length']
-        elif hasattr(parent, 'tick_length'):
-            self.tick_length = parent.tick_length
-
-        if 'linewidth' in tx:
-            self.tick_linewidth = tx['linewidth']
-        elif hasattr(parent, 'tick_linewidth'):
-            self.tick_linewidth = parent.tick_linewidth
-
-        if 'direction' in tx:
-            self.tick_direction = tx['direction']
-        elif hasattr(parent, 'tick_direction'):
-            self.tick_direction = parent.tick_direction
-
-        if 'hide' in tx:
+        for at in ['xspacing', 'xminor_freq', 'yspacing', 'yminor_freq']:
+            if tx != None and at in tx:
+                setattr(self, at, tx[at])
+            elif hasattr(parent, at):
+                setattr(self, at, getattr(parent, at))
+                
+        if tx != None and 'hide' in tx:
             self.tick_xhide = tx['hide']
             self.tick_yhide = tx['hide']
 
-        if 'xhide' in tx:
-            self.tick_xhide = tx['xhide']
-        elif hasattr(parent, 'tick_xhide'):
-            self.tick_xhide = parent.tick_xhide
-
-        if 'yhide' in tx:
-            self.tick_yhide = tx['yhide']
-        elif hasattr(parent, 'tick_yhide'):
-            self.tick_yhide = parent.tick_yhide
-
+        for at in ['color', 'length', 'linewidth', 'direction', 'xhide',
+                   'yhide']:
+            if tx != None and at in tx:
+                setattr(self, 'tick_'+at, tx[at])
+            elif hasattr(parent, 'tick_'+at):
+                setattr(self, 'tick_'+at, getattr(parent, 'tick_'+at))
+                
 
             
     def read_tick_labels(self, tl, parent):
         """Read the configuration for the tick labels.""" 
 
-        if 'hide' in tl:
+        if tl != None and 'hide' in tl:
             self.ticklabel_xhide = tl['hide']
             self.ticklabel_yhide = tl['hide']
 
         for at in ['xposition', 'yposition', 'xformat', 'yformat', 'style',
                    'xhide', 'yhide']:
-            if at in tl:
+            if tl != None and at in tl:
                 setattr(self, 'ticklabel_'+at, tl[at])
             elif hasattr(parent, 'ticklabel_'+at):
                 setattr(self, 'ticklabel_'+at, getattr(parent, 'ticklabel_'+at))
@@ -489,7 +468,7 @@ class Axes(object):
         else :
             self.ticklabel_font = {}
 
-        if 'font' in tl:
+        if tl != None and 'font' in tl:
             ff = tl['font']
 
             for prop in ['family', 'style', 'size', 'variant', 'stretch',
