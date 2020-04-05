@@ -112,6 +112,9 @@ class Frame(object):
         if 'contours' in cnfg:
             self.contour = dsp. Contour(cnfg['contours'], self)
 
+        if 'axes' in cnfg:
+            self.axes = Axes(cnfg['axes'], self)
+
             
         self.wd = dirs['wkdir']
 
@@ -251,7 +254,7 @@ class Panel(object) :
 
         if self.axes != None:
             ax = self.axes
-            ax.set_axes(gc, idx)
+            ax.set_axes(gc[idx])
 
         if self.labels != None :
             for lb in self.labels.label_list :
@@ -325,8 +328,6 @@ class View(object) :
                     self.box = parent.view.box
                 except AttributeError:
                     self.box = None
-
-        
             
 
         if cnfg != None and 'center' in cnfg:
@@ -356,97 +357,216 @@ class Axes(object):
 
     def __init__(self, cfg, parent):
 
-        #if cfg != None and 'axes_labels' in cfg
-        #    self.read_axes_labels(cfg['axes_labels'])
+        if cfg != None and 'axes_labels' in cfg:
+            if hasattr(parent, 'axes'):
+                self.read_axes_labels(cfg['axes_labels'], parent.axes)
+            else :
+                self.read_axes_labels(cfg['axes_labels'], None)
 
         #if cfg != None and 'tick_labels' in cfg:
         #    self.read_tick_labels(cfg['tick_labels'])
 
         if cfg != None and 'ticks' in cfg :
-            self.read_ticks(cfg['ticks'])
+            if hasattr(parent, 'axes'):
+                self.read_ticks(cfg['ticks'], parent.axes)
+            else :
+                self.read_ticks(cfg['ticks'], None)
 
 
 
-    def read_ticks (self, tx):
+    def read_axes_labels(self, ax, parent):
 
-            if 'xspacing' in tx :
-                self.xspacing = tx['xspacing']
+        if 'xposition' in ax:
+            self.xposition = ax['xposition']
+        elif hasattr(parent, 'xposition'):
+            self.xposition = parent.xposition
 
-            if 'xminor_freq' in tx:
-                self.xminor_freq = tx['xminor_freq']
+        if 'yposition' in ax:
+            self.yposition = ax['yposition']
+        elif hasattr(parent, 'yposition'):
+            self.yposition = parent.yposition
 
-            if 'yspacing' in tx :
-                self.yspacing = tx['yspacing']
+        if 'xpad' in ax:
+            self.xpad = ax['xpad']
+        elif hasattr(parent, 'xpad'):
+            self.xpad = parent.xpad
 
-            if 'yminor_freq' in tx:
-                self.yminor_freq = tx['yminor_freq']
+        if 'ypad' in ax:
+            self.ypad = ax['ypad']
+        elif hasattr(parent, 'ypad'):
+            self.ypad = parent.ypad
 
-            if 'color' in tx:
-                self.tick_color = tx['color']
+        if 'xtext' in ax:
+            self.xtext = ax['xtext']
+        elif hasattr(parent, 'xtext'):
+            self.xtext = parent.xtext
 
-            if 'length' in tx:
-                self.tick_length = tx['length']
+        if 'ytext' in ax:
+            self.ytext = ax['ytext']
+        elif hasattr(parent, 'ytext'):
+            self.ytext = parent.ytext
 
-            if 'linewidth' in tx:
-                self.tick_linewidth = tx['linewidth']
+        if hasattr(parent, 'axis_font'):
+            self.axis_font = parent.axis_font.copy()
+        else :
+            self.axis_font = {}
 
-            if 'direction' in tx:
-                self.tick_direction = tx['direction']
+        if 'font' in ax:
+            ff = ax['font']
 
-            if 'hide' in tx:
-                self.tick_xhide = tx['hide']
-                self.tick_yhide = tx['hide']
+            for prop in ['family', 'style', 'size', 'variant', 'stretch',
+                         'weight']:
+                if prop in ff :
+                    self.axis_font[prop] = ff[prop]
 
-            if 'xhide' in tx:
-                self.tick_xhide = tx['xhide']
+        if 'hide' in ax:
+            self.axis_xhide = ax['hide']
+            self.axis_yhide = ax['hide']
 
-            if 'yhide' in tx:
-                self.tick_yhide = tx['yhide']
+        if 'xhide' in ax:
+            self.axis_xhide = ax['xhide']
+        elif hasattr(parent, 'xhide'):
+            self.axis_xhide = parent.axis_xhide
+
+        if 'yhide' in ax:
+            self.axis_yhide = ax['yhide']
+        elif hasattr(parent, 'yhide'):
+            self.axis_yhide = parent.axis_yhide
 
 
 
-    def set_axes(self, gc, ix):
+    def read_ticks (self, tx, parent):
+
+        if 'xspacing' in tx :
+            self.xspacing = tx['xspacing']
+        elif hasattr(parent, 'xspacing'):
+            self.xspacing = parent.xspacing
+
+        if 'xminor_freq' in tx:
+            self.xminor_freq = tx['xminor_freq']
+        elif hasattr(parent, 'xminor_freq'):
+            self.xminor_freq = parent.xminor_freq
+
+        if 'yspacing' in tx :
+            self.yspacing = tx['yspacing']
+        elif hasattr(parent, 'yspacing'):
+            self.yspacing = parent.yspacing
+
+        if 'yminor_freq' in tx:
+            self.yminor_freq = tx['yminor_freq']
+        elif hasattr(parent, 'yminor_freq'):
+            self.yminor_freq = parent.yminor_freq
+
+        if 'color' in tx:
+            self.tick_color = tx['color']
+        elif hasattr(parent, 'tick_color'):
+            self.tick_color = parent.tick_color
+
+        if 'length' in tx:
+            self.tick_length = tx['length']
+        elif hasattr(parent, 'tick_length'):
+            self.tick_length = parent.tick_length
+
+        if 'linewidth' in tx:
+            self.tick_linewidth = tx['linewidth']
+        elif hasattr(parent, 'tick_linewidth'):
+            self.tick_linewidth = parent.tick_linewidth
+
+        if 'direction' in tx:
+            self.tick_direction = tx['direction']
+        elif hasattr(parent, 'tick_direction'):
+            self.tick_direction = parent.tick_direction
+
+        if 'hide' in tx:
+            self.tick_xhide = tx['hide']
+            self.tick_yhide = tx['hide']
+
+        if 'xhide' in tx:
+            self.tick_xhide = tx['xhide']
+        elif hasattr(parent, 'tick_xhide'):
+            self.tick_xhide = parent.tick_xhide
+
+        if 'yhide' in tx:
+            self.tick_yhide = tx['yhide']
+        elif hasattr(parent, 'tick_yhide'):
+            self.tick_yhide = parent.tick_yhide
+
+
+
+    def set_axes(self, g):
         """Sets axes properties."""
 
-        #self.set_axes_labels(gc, ix)
-        #self.set_tick_labels(gc, ix)
-        self.set_ticks(gc,ix)
+        self.set_axes_labels(g.axis_labels)
+        #self.set_tick_labels(g.tick_labels)
+        self.set_ticks(g.ticks)
 
 
 
-    def set_ticks(self, gc, ix):
+    def set_axes_labels(self, gp) :
+        """Set axes labels."""
+
+        if hasattr(self, 'axis_font'):
+            gp.set_font(**self.axis_font)
+
+        if hasattr(self, 'xposition'):
+            gp.set_xposition(self.xposition)
+
+        if hasattr(self, 'yposition'):
+            gp.set_yposition(self.yposition)
+
+        if hasattr(self, 'xpad'):
+            gp.set_xpad(self.xpad)
+
+        if hasattr(self, 'ypad'):
+            gp.set_ypad(self.ypad)
+
+        if hasattr(self, 'xtext'):
+            gp.set_xtext(self.xtext)
+
+        if hasattr(self, 'ytext'):
+            gp.set_ytext(self.ytext)
+
+        if hasattr(self, 'axis_xhide'):
+            if self.axis_xhide:
+                gp.hide_x()
+
+        if hasattr(self, 'axis_yhide'):
+            if self.axis_yhide:
+                gp.hide_y()
+
+
+
+    def set_ticks(self, gp):
         """Set tick properties."""
 
         if hasattr(self, 'xspacing'):
-            gc[ix].ticks.set_xspacing(self.xspacing)
+            gp.set_xspacing(self.xspacing)
         if hasattr(self, 'yspacing'):
-            gc[ix].ticks.set_yspacing(self.yspacing)
+            gp.set_yspacing(self.yspacing)
 
         if hasattr(self, 'xminor_freq'):
             if hasattr(self, 'yminor_freq'):
-                gc[ix].ticks.set_minor_frequency(self.xminor_freq,
+                gp.set_minor_frequency(self.xminor_freq,
                                                  self.yminor_freq)
             else :
-                gc[ix].ticks.set_minor_frequency(self.xminor_freq)
-
+                gp.set_minor_frequency(self.xminor_freq)
 
         if hasattr(self, 'tick_color'):
-            gc[ix].ticks.set_color(self.tick_color)
+            gp.set_color(self.tick_color)
 
         if hasattr(self, 'tick_length'):
-            gc[ix].ticks.set_length(self.tick_length)
+            gp.set_length(self.tick_length)
 
         if hasattr(self, 'tick_linewidth'):
-            gc[ix].ticks.set_linewidth(self.tick_linewidth)
+            gp.set_linewidth(self.tick_linewidth)
 
         if hasattr(self, 'tick_direction'):
-            gc[ix].ticks.set_tick_direction(self.tick_direction)
-
+            gp.set_tick_direction(self.tick_direction)
 
         if hasattr(self, 'tick_xhide'):
             if self.tick_xhide :
-                gc[ix].ticks.hide_x()
+                gp.hide_x()
 
         if hasattr(self, 'tick_yhide'):
             if self.tick_yhide :
-                gc[ix].ticks.hide_y()
+                gp.hide_y()
