@@ -264,13 +264,13 @@ class Panel(object) :
                 mk.add_markers(gc[idx])
 
         if hasattr(self, 'colorbar'):
-            self.set_colorbar(gc[idx])
+            self.colorbar.set_colorbar(gc[idx])
 
             
 
     def set_pixel_first(self):
-        """ put the dataset with a pixel range in the first position
-        """
+        """Put the dataset with a pixel range in the first position."""
+
         idx = 0
         dp = self.datasets
 
@@ -287,18 +287,10 @@ class Panel(object) :
 
 
 
-    def set_colorbar(self, pnl) :
-        pnl.add_colorbar()
-        pnl.colorbar.set_width(self.colorbar.width)
-        pnl.colorbar.set_location(self.colorbar.location)
-        pnl.colorbar.set_axis_label_text(self.colorbar.text)
-
-
-
 
 class View(object) :
-    """ Create a view
-    """
+    """Create a view."""
+
     def __init__(self, cnfg, parent) :
         if cnfg != None and 'type' in cnfg:
             self.vtype = cnfg['type']

@@ -308,6 +308,16 @@ class Colorbar(object):
                 self.text = ''
 
 
+
+    def set_colorbar(self, g):
+        """Set the colobar in the panel."""
+
+        g.add_colorbar()
+        g.colorbar.set_width(self.width)
+        g.colorbar.set_location(self.location)
+        g.colorbar.set_axis_label_text(self.text)
+
+
                 
 class Contour(object):
     """ Create contours.
