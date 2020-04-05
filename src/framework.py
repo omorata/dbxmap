@@ -435,7 +435,6 @@ class Axes(object):
 
 
 
-
     def read_ticks (self, tx, parent):
 
         if 'xspacing' in tx :
@@ -445,24 +444,38 @@ class Axes(object):
 
         if 'xminor_freq' in tx:
             self.xminor_freq = tx['xminor_freq']
+        elif hasattr(parent, 'xminor_freq'):
+            self.xminor_freq = parent.xminor_freq
 
         if 'yspacing' in tx :
             self.yspacing = tx['yspacing']
+        elif hasattr(parent, 'yspacing'):
+            self.yspacing = parent.yspacing
 
         if 'yminor_freq' in tx:
             self.yminor_freq = tx['yminor_freq']
+        elif hasattr(parent, 'yminor_freq'):
+            self.yminor_freq = parent.yminor_freq
 
         if 'color' in tx:
             self.tick_color = tx['color']
+        elif hasattr(parent, 'tick_color'):
+            self.tick_color = parent.tick_color
 
         if 'length' in tx:
             self.tick_length = tx['length']
+        elif hasattr(parent, 'tick_length'):
+            self.tick_length = parent.tick_length
 
         if 'linewidth' in tx:
             self.tick_linewidth = tx['linewidth']
+        elif hasattr(parent, 'tick_linewidth'):
+            self.tick_linewidth = parent.tick_linewidth
 
         if 'direction' in tx:
             self.tick_direction = tx['direction']
+        elif hasattr(parent, 'tick_direction'):
+            self.tick_direction = parent.tick_direction
 
         if 'hide' in tx:
             self.tick_xhide = tx['hide']
@@ -470,9 +483,13 @@ class Axes(object):
 
         if 'xhide' in tx:
             self.tick_xhide = tx['xhide']
+        elif hasattr(parent, 'tick_xhide'):
+            self.tick_xhide = parent.tick_xhide
 
         if 'yhide' in tx:
             self.tick_yhide = tx['yhide']
+        elif hasattr(parent, 'tick_yhide'):
+            self.tick_yhide = parent.tick_yhide
 
 
 
@@ -480,12 +497,11 @@ class Axes(object):
         """Sets axes properties."""
 
         self.set_axes_labels(g.axis_labels)
-        #self.set_tick_labels(gc[ix].tick_labels)
+        #self.set_tick_labels(g.tick_labels)
         self.set_ticks(g.ticks)
 
 
 
-    #def set_axes_labels(self, gc, ix) :
     def set_axes_labels(self, gp) :
         """Set axes labels."""
 
