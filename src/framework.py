@@ -253,8 +253,7 @@ class Panel(object) :
                 pass
 
         if self.axes != None:
-            ax = self.axes
-            ax.set_axes(gc[idx])
+            self.axes.set_axes(gc[idx])
 
         if self.labels != None :
             for lb in self.labels.label_list :
@@ -354,7 +353,8 @@ class View(object) :
 
             
 class Axes(object):
-
+    """Class that contains the definition of the plot axes."""
+    
     def __init__(self, cfg, parent):
 
         if cfg != None and 'axes_labels' in cfg:
@@ -400,7 +400,6 @@ class Axes(object):
                 setattr(self, at, ax[at])
             elif hasattr(parent, at):
                 setattr(self, at, getattr(parent, at))
-
 
         if hasattr(parent, 'axis_font'):
             self.axis_font = parent.axis_font.copy()
