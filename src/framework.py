@@ -82,11 +82,9 @@ class Figure(object):
 
         
 class Frame(object):
-    """ Class defining the elements of the figure
-    """
-    def __init__(self, cnfg, dirs):
+    """ Class defining the elements of the figure."""
 
-        # self.labels
+    def __init__(self, cnfg, dirs):
 
         self.wkdir = dirs['wkdir']
         
@@ -137,6 +135,11 @@ class Frame(object):
 
 
     def add_panels(self, fig):
+        """Add panels to the figure.
+
+        Argument:
+            fig: handle of a FITSFigure instance
+        """
 
         p_idx = 0
         gc = []
@@ -150,8 +153,8 @@ class Frame(object):
             
             
 class Panel(object) :
-    """ Create a panel
-    """ 
+    """ Create a panel."""
+     
     def __init__(self, cnfg, name, idx, parent):
 
         self.name = name
@@ -233,9 +236,9 @@ class Panel(object) :
                                            subplot=self.position,
                                            dimensions=d.dims))
 
-                vw.set_view(gc, idx)
+                vw.set_view(gc[idx])
 
-            d.show(gc, idx)
+            d.show(gc[idx])
 
             cid += 1
 
@@ -253,25 +256,24 @@ class Panel(object) :
                 pass
 
         if self.axes != None:
-            ax = self.axes
-            ax.set_axes(gc[idx])
+            self.axes.set_axes(gc[idx])
 
         if self.labels != None :
             for lb in self.labels.label_list :
-                gc = lb.add_label(gc, idx)
+                lb.add_label(gc[idx])
 
         if self.markers != None:
             for mk in self.markers.marklist :
-                mk.add_markers(gc, idx)
+                mk.add_markers(gc[idx])
 
         if hasattr(self, 'colorbar'):
-            self.set_colorbar(gc[idx])
+            self.colorbar.set_colorbar(gc[idx])
 
             
 
     def set_pixel_first(self):
-        """ put the dataset with a pixel range in the first position
-        """
+        """Put the dataset with a pixel range in the first position."""
+
         idx = 0
         dp = self.datasets
 
@@ -288,25 +290,16 @@ class Panel(object) :
 
 
 
-    def set_colorbar(self, pnl) :
-        pnl.add_colorbar()
-        pnl.colorbar.set_width(self.colorbar.width)
-        pnl.colorbar.set_location(self.colorbar.location)
-        pnl.colorbar.set_axis_label_text(self.colorbar.text)
 
-
-        
-                
 class View(object) :
-    """ Create a view
-    """
+    """Create a view."""
+
     def __init__(self, cnfg, parent) :
         if cnfg != None and 'type' in cnfg:
             self.vtype = cnfg['type']
         else :
             try:
                 self.vtype = parent.view.vtype
-                
             except AttributeError:
                 self.vtype = None
 
@@ -340,21 +333,21 @@ class View(object) :
 
             
 
-    def set_view(self, gp, idx):
-        """set the view of the panel
-        """
+    def set_view(self, g):
+        """set the view of the panel."""
+
         if self.vtype == 'radius' :
-            gp[idx].recenter(self.center[0], self.center[1],
-                             radius=self.radius)
+            g.recenter(self.center[0], self.center[1], radius=self.radius)
 
         elif self.vtype == 'box' :
-            gp[idx].recenter(self.center[0], self.center[1],
-                             height=self.box[0], width=self.box[1])
+            g.recenter(self.center[0], self.center[1],
+                       height=self.box[0], width=self.box[1])
 
 
             
 class Axes(object):
-
+    """Class that contains the definition of the plot axes."""
+    
     def __init__(self, cfg, parent):
 
         if cfg != None and 'axes_labels' in cfg:
@@ -362,56 +355,51 @@ class Axes(object):
                 self.read_axes_labels(cfg['axes_labels'], parent.axes)
             else :
                 self.read_axes_labels(cfg['axes_labels'], None)
+        else:
+            try:
+                self.read_axes_labels(None, parent.axes)
+            except AttributeError:
+                pass
 
-        #if cfg != None and 'tick_labels' in cfg:
-        #    self.read_tick_labels(cfg['tick_labels'])
+        if cfg != None and 'tick_labels' in cfg:
+            if hasattr(parent, 'axes'):
+                self.read_tick_labels(cfg['tick_labels'], parent.axes)
+            else :
+                self.read_tick_labels(cfg['tick_labels'], None)
+        else:
+            try:
+                self.read_tick_labels(None, parent.axes)
+            except AttributeError:
+                pass
 
         if cfg != None and 'ticks' in cfg :
             if hasattr(parent, 'axes'):
                 self.read_ticks(cfg['ticks'], parent.axes)
             else :
                 self.read_ticks(cfg['ticks'], None)
+        else:
+            try:
+                self.read_ticks(None, parent.axes)
+            except AttributeError:
+                pass
 
 
 
     def read_axes_labels(self, ax, parent):
+        """Read the configuration labels for the axes labels.""" 
 
-        if 'xposition' in ax:
-            self.xposition = ax['xposition']
-        elif hasattr(parent, 'xposition'):
-            self.xposition = parent.xposition
-
-        if 'yposition' in ax:
-            self.yposition = ax['yposition']
-        elif hasattr(parent, 'yposition'):
-            self.yposition = parent.yposition
-
-        if 'xpad' in ax:
-            self.xpad = ax['xpad']
-        elif hasattr(parent, 'xpad'):
-            self.xpad = parent.xpad
-
-        if 'ypad' in ax:
-            self.ypad = ax['ypad']
-        elif hasattr(parent, 'ypad'):
-            self.ypad = parent.ypad
-
-        if 'xtext' in ax:
-            self.xtext = ax['xtext']
-        elif hasattr(parent, 'xtext'):
-            self.xtext = parent.xtext
-
-        if 'ytext' in ax:
-            self.ytext = ax['ytext']
-        elif hasattr(parent, 'ytext'):
-            self.ytext = parent.ytext
+        for at in ['xposition', 'yposition', 'xpad', 'ypad', 'xtext', 'ytext']:
+            if ax != None and at in ax:
+                setattr(self, at, ax[at])
+            elif hasattr(parent, at):
+                setattr(self, at, getattr(parent, at))
 
         if hasattr(parent, 'axis_font'):
             self.axis_font = parent.axis_font.copy()
         else :
             self.axis_font = {}
 
-        if 'font' in ax:
+        if ax != None and 'font' in ax:
             ff = ax['font']
 
             for prop in ['family', 'style', 'size', 'variant', 'stretch',
@@ -419,77 +407,66 @@ class Axes(object):
                 if prop in ff :
                     self.axis_font[prop] = ff[prop]
 
-        if 'hide' in ax:
+        if ax != None and 'hide' in ax:
             self.axis_xhide = ax['hide']
             self.axis_yhide = ax['hide']
 
-        if 'xhide' in ax:
-            self.axis_xhide = ax['xhide']
-        elif hasattr(parent, 'xhide'):
-            self.axis_xhide = parent.axis_xhide
-
-        if 'yhide' in ax:
-            self.axis_yhide = ax['yhide']
-        elif hasattr(parent, 'yhide'):
-            self.axis_yhide = parent.axis_yhide
+        for at in ['xhide', 'yhide']:
+            if ax != None and at in ax :
+                setattr(self, 'axis_'+at, ax[at])
+            elif hasattr(parent, 'axis_'+at):
+                setattr(self, 'axis_'+at, getattr(parent, 'axis_'+at))
 
 
 
     def read_ticks (self, tx, parent):
+        """Read the configuration for ticks."""
 
-        if 'xspacing' in tx :
-            self.xspacing = tx['xspacing']
-        elif hasattr(parent, 'xspacing'):
-            self.xspacing = parent.xspacing
-
-        if 'xminor_freq' in tx:
-            self.xminor_freq = tx['xminor_freq']
-        elif hasattr(parent, 'xminor_freq'):
-            self.xminor_freq = parent.xminor_freq
-
-        if 'yspacing' in tx :
-            self.yspacing = tx['yspacing']
-        elif hasattr(parent, 'yspacing'):
-            self.yspacing = parent.yspacing
-
-        if 'yminor_freq' in tx:
-            self.yminor_freq = tx['yminor_freq']
-        elif hasattr(parent, 'yminor_freq'):
-            self.yminor_freq = parent.yminor_freq
-
-        if 'color' in tx:
-            self.tick_color = tx['color']
-        elif hasattr(parent, 'tick_color'):
-            self.tick_color = parent.tick_color
-
-        if 'length' in tx:
-            self.tick_length = tx['length']
-        elif hasattr(parent, 'tick_length'):
-            self.tick_length = parent.tick_length
-
-        if 'linewidth' in tx:
-            self.tick_linewidth = tx['linewidth']
-        elif hasattr(parent, 'tick_linewidth'):
-            self.tick_linewidth = parent.tick_linewidth
-
-        if 'direction' in tx:
-            self.tick_direction = tx['direction']
-        elif hasattr(parent, 'tick_direction'):
-            self.tick_direction = parent.tick_direction
-
-        if 'hide' in tx:
+        for at in ['xspacing', 'xminor_freq', 'yspacing', 'yminor_freq']:
+            if tx != None and at in tx:
+                setattr(self, at, tx[at])
+            elif hasattr(parent, at):
+                setattr(self, at, getattr(parent, at))
+                
+        if tx != None and 'hide' in tx:
             self.tick_xhide = tx['hide']
             self.tick_yhide = tx['hide']
 
-        if 'xhide' in tx:
-            self.tick_xhide = tx['xhide']
-        elif hasattr(parent, 'tick_xhide'):
-            self.tick_xhide = parent.tick_xhide
+        for at in ['color', 'length', 'linewidth', 'direction', 'xhide',
+                   'yhide']:
+            if tx != None and at in tx:
+                setattr(self, 'tick_'+at, tx[at])
+            elif hasattr(parent, 'tick_'+at):
+                setattr(self, 'tick_'+at, getattr(parent, 'tick_'+at))
+                
 
-        if 'yhide' in tx:
-            self.tick_yhide = tx['yhide']
-        elif hasattr(parent, 'tick_yhide'):
-            self.tick_yhide = parent.tick_yhide
+            
+    def read_tick_labels(self, tl, parent):
+        """Read the configuration for the tick labels.""" 
+
+        if tl != None and 'hide' in tl:
+            self.ticklabel_xhide = tl['hide']
+            self.ticklabel_yhide = tl['hide']
+
+        for at in ['xposition', 'yposition', 'xformat', 'yformat', 'style',
+                   'xhide', 'yhide']:
+            if tl != None and at in tl:
+                setattr(self, 'ticklabel_'+at, tl[at])
+            elif hasattr(parent, 'ticklabel_'+at):
+                setattr(self, 'ticklabel_'+at, getattr(parent, 'ticklabel_'+at))
+
+        if hasattr(parent, 'ticklabel_font'):
+            self.ticklabel_font = parent.ticklabel_font.copy()
+        else :
+            self.ticklabel_font = {}
+
+        if tl != None and 'font' in tl:
+            ff = tl['font']
+
+            for prop in ['family', 'style', 'size', 'variant', 'stretch',
+                         'weight']:
+                if prop in ff :
+                    self.ticklabel_font[prop] = ff[prop]
 
 
 
@@ -497,7 +474,7 @@ class Axes(object):
         """Sets axes properties."""
 
         self.set_axes_labels(g.axis_labels)
-        #self.set_tick_labels(g.tick_labels)
+        self.set_tick_labels(g.tick_labels)
         self.set_ticks(g.ticks)
 
 
@@ -570,3 +547,38 @@ class Axes(object):
         if hasattr(self, 'tick_yhide'):
             if self.tick_yhide :
                 gp.hide_y()
+
+
+
+    def set_tick_labels(self, gp) :
+        """Set the tick labels."""
+
+        if hasattr(self, 'ticklabel_font'):
+            gp.set_font(**self.ticklabel_font)
+
+        if hasattr(self, 'ticklabel_xposition'):
+            gp.set_xposition(self.ticklabel_xposition)
+
+        if hasattr(self, 'ticklabel_yposition'):
+            gp.set_yposition(self.ticklabel_yposition)
+
+        if hasattr(self, 'ticklabel_xformat'):
+            gp.set_xformat(self.ticklabel_xformat)
+
+        if hasattr(self, 'ticklabel_yformat'):
+            gp.set_yformat(self.ticklabel_yformat)
+
+        if hasattr(self, 'ticklabel_style'):
+            gp.set_style(self.ticklabel_style)
+
+        if hasattr(self, 'ticklabel_xhide'):
+            if self.ticklabel_xhide:
+                gp.hide_x()
+
+        if hasattr(self, 'ticklabel_yhide'):
+            if self.ticklabel_yhide:
+                gp.hide_y()
+
+            
+
+

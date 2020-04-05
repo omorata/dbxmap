@@ -12,6 +12,7 @@ allows to define, among other things:
   + number of panels in the figure
   + plot data as a pixel map and/or as contours with, hopefully, full control
     on their definition
+  + control over axes and ticks properties
   + plot beam size of the data
   + show a colorbar with the pixel data range
   + overlay polygons
