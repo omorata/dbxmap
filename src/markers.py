@@ -23,7 +23,6 @@ class Marker(object) :
     defaults = ['', 'black', 1.0, 'solid', 'none', False, 'black',
                 'normal', 12, [0,0], 1.0, 50, 'black']
 
-    # split them style, l_style, and the rest
     
     def __init__ (self, cfg, parent):
 
@@ -70,7 +69,7 @@ class Marker(object) :
 
 
     
-    def add_markers(self, gc, i):
+    def add_markers(self, g):
         """Adds markers to the panel."""
 
         marker_fields = self.marker
@@ -78,29 +77,26 @@ class Marker(object) :
         for mk in marker_fields:
 
             if mk['type'] == 'polygon' :
-                gc[i].show_polygons(mk['corners'], **mk['style'])
+                g.show_polygons(mk['corners'], **mk['style'])
 
             elif mk['type'] == "ellipse" :
-                gc[i].show_ellipses(mk['x'], mk['y'],
-                                   mk['maj'], mk['min'], angle=mk['pa'],
-                                   **mk['style'])
+                g.show_ellipses(mk['x'], mk['y'],
+                                mk['maj'], mk['min'], angle=mk['pa'],
+                                **mk['style'])
 
             elif mk['type'] == "line" :
-                gc[i].show_lines(mk['line'], color=mk['linecolor'],
-                                 **mk['style'])
+                g.show_lines(mk['line'], color=mk['linecolor'],
+                             **mk['style'])
 
             else :
-                gc[i].show_markers(mk['x'], mk['y'],
-                                   marker=mk['sym'],
-                                   s=mk['size'],
-                                   c=mk['c'],
-                                   **mk['style'])
+                g.show_markers(mk['x'], mk['y'], marker=mk['sym'], s=mk['size'],
+                               c=mk['c'], **mk['style'])
 
             if self.marker_props['show_label'] :
                 x = mk['x'] + mk['lpad'][0] / 3600.
                 y = mk['y'] + mk['lpad'][1] / 3600.
 
-                gc[i].add_label(x, y, mk['id'], **mk['l_style'], clip_on=True)
+                g.add_label(x, y, mk['id'], **mk['l_style'], clip_on=True)
 
 
 
@@ -298,6 +294,9 @@ class Marker(object) :
 class Label(object):
     """Create a label."""
 
+    properties = [ 'color', 'relative', 'position', 'size', 'style', 'text']
+    defaults = ['black', False, [0.1, 0.9], 12, 'normal', ""]
+
     def __init__(self, cfg, parent):
 
         if hasattr(parent, 'labels') and parent.labels != None :
@@ -329,24 +328,20 @@ class Label(object):
 
 
 
-    def add_label(self, pp, idx) :
+    def add_label(self, p) :
         """Adds label to the panel."""
 
-        pp[idx].add_label(self.label_props['position'][0],
-                          self.label_props['position'][1],
-                          **self.label_props)
-
-        return pp
+        p.add_label(self.label_props['position'][0],
+                    self.label_props['position'][1], **self.label_props)
 
 
 
     def default_label_props(self):
         """Define default values for label properties."""
 
-        props = { 'color' : 'black',
-                  'relative' : False,
-                  'position' : [0.1, 0.9],
-                  'size' : 12,
-                  'style' :  'normal',
-                  'text' : "" }
+        props = { key:value for key, value in
+                  zip(self.properties, self.defaults) }
+
         return props
+
+

@@ -162,35 +162,34 @@ class Dataset(object) :
                 
 
             
-    def show(self, gc, idx) :
+    def show(self, g) :
         """ show the dataset
             It takes into account whether it is a pixel map or a contour
             map
         """
         if self.dtype == 'pixel' :
-            self.show_colorscale(gc, idx)
+            self.show_colorscale(g)
 
         elif self.dtype == 'cntr' :
-            self.show_contour(gc, idx)
+            self.show_contour(g)
 
 
             
-    def show_colorscale(self, gc, idx) :
-        """ show a colorscale of the dataset
-        """
-        gc[idx].show_colorscale(vmin=self.pixrange.range[0],
-                                vmax=self.pixrange.range[1],
-                                stretch=self.pixrange.stretch,
-                                cmap=self.pixrange.colormap,
-                                aspect='equal')
+    def show_colorscale(self, g) :
+        """Show a colorscale of the dataset."""
+
+        g.show_colorscale(vmin=self.pixrange.range[0],
+                          vmax=self.pixrange.range[1],
+                          stretch=self.pixrange.stretch,
+                          cmap=self.pixrange.colormap,
+                          aspect='equal')
 
 
         
-    def show_contour(self, gc, idx) :
-        """ show a contour map of the dataset
-        """
-        gc[idx].show_contour(self.filename,
-                             levels=self.contour.levels,
+    def show_contour(self, g) :
+        """Show a contour map of the dataset."""
+
+        g.show_contour(self.filename, levels=self.contour.levels,
                              colors=self.contour.colors,
                              linewidths=self.contour.linewidth,
                              linestyles=self.contour.linestyle)

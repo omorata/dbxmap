@@ -233,9 +233,9 @@ class Panel(object) :
                                            subplot=self.position,
                                            dimensions=d.dims))
 
-                vw.set_view(gc, idx)
+                vw.set_view(gc[idx])
 
-            d.show(gc, idx)
+            d.show(gc[idx])
 
             cid += 1
 
@@ -257,11 +257,11 @@ class Panel(object) :
 
         if self.labels != None :
             for lb in self.labels.label_list :
-                gc = lb.add_label(gc, idx)
+                lb.add_label(gc[idx])
 
         if self.markers != None:
             for mk in self.markers.marklist :
-                mk.add_markers(gc, idx)
+                mk.add_markers(gc[idx])
 
         if hasattr(self, 'colorbar'):
             self.set_colorbar(gc[idx])
@@ -294,8 +294,8 @@ class Panel(object) :
         pnl.colorbar.set_axis_label_text(self.colorbar.text)
 
 
-        
-                
+
+
 class View(object) :
     """ Create a view
     """
@@ -305,7 +305,6 @@ class View(object) :
         else :
             try:
                 self.vtype = parent.view.vtype
-                
             except AttributeError:
                 self.vtype = None
 
@@ -339,16 +338,15 @@ class View(object) :
 
             
 
-    def set_view(self, gp, idx):
-        """set the view of the panel
-        """
+    def set_view(self, g):
+        """set the view of the panel."""
+
         if self.vtype == 'radius' :
-            gp[idx].recenter(self.center[0], self.center[1],
-                             radius=self.radius)
+            g.recenter(self.center[0], self.center[1], radius=self.radius)
 
         elif self.vtype == 'box' :
-            gp[idx].recenter(self.center[0], self.center[1],
-                             height=self.box[0], width=self.box[1])
+            g.recenter(self.center[0], self.center[1],
+                       height=self.box[0], width=self.box[1])
 
 
             
