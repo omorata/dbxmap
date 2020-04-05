@@ -82,11 +82,9 @@ class Figure(object):
 
         
 class Frame(object):
-    """ Class defining the elements of the figure
-    """
-    def __init__(self, cnfg, dirs):
+    """ Class defining the elements of the figure."""
 
-        # self.labels
+    def __init__(self, cnfg, dirs):
 
         self.wkdir = dirs['wkdir']
         
@@ -137,6 +135,11 @@ class Frame(object):
 
 
     def add_panels(self, fig):
+        """Add panels to the figure.
+
+        Argument:
+            fig: handle of a FITSFigure instance
+        """
 
         p_idx = 0
         gc = []
@@ -150,8 +153,8 @@ class Frame(object):
             
             
 class Panel(object) :
-    """ Create a panel
-    """ 
+    """ Create a panel."""
+     
     def __init__(self, cnfg, name, idx, parent):
 
         self.name = name
