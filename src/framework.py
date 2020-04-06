@@ -8,6 +8,7 @@
 ##  the map
 ##
 
+import copy
 import os
 import sys
 
@@ -87,7 +88,12 @@ class Frame(object):
     def __init__(self, cnfg, dirs):
 
         self.wkdir = dirs['wkdir']
-        
+
+        if 'font' in cnfg:
+            self.fonts = self.read_font(cnfg['font'])
+        else :
+            self.fonts = None
+
         if 'yx' in cnfg:
             self.yx = cnfg['yx']
         else:
@@ -97,10 +103,10 @@ class Frame(object):
             self.view = View(cnfg['view'], self)
 
         if 'markers' in cnfg:
-            self.markers = mrk.Marker(cnfg['markers'], self)
+            self.markers = mrk.Marker(cnfg['markers'], self, fonts=self.fonts)
 
         if 'labels' in cnfg:
-            self.labels = mrk.Label(cnfg['labels'], self)
+            self.labels = mrk.Label(cnfg['labels'], self, fonts=self.fonts)
         else :
             self.labels = None
 
@@ -111,10 +117,11 @@ class Frame(object):
             self.contour = dsp. Contour(cnfg['contours'], self)
 
         if 'axes' in cnfg:
-            self.axes = Axes(cnfg['axes'], self)
+            self.axes = Axes(cnfg['axes'], self, fonts=self.fonts)
 
         if 'colorbar' in cnfg:
-            self.colorbar = dsp.Colorbar(cnfg['colorbar'], self)
+            self.colorbar = dsp.Colorbar(cnfg['colorbar'], self,
+                                         fonts=self.fonts)
 
             
         self.wd = dirs['wkdir']
@@ -134,6 +141,17 @@ class Frame(object):
         
         else:
             self.panels = []
+
+
+
+    @staticmethod
+    def read_font(ff):
+
+        dct = {}
+        for prop in ['family', 'style', 'size', 'variant', 'stretch', 'weight']:
+            if prop in ff :
+                dct[prop] = ff[prop]
+        return dct
 
 
 
@@ -162,7 +180,13 @@ class Panel(object) :
 
         self.name = name
 
-        
+        if 'font' in cnfg:
+            self.fonts = self.read_font(cnfg['font'], parent)
+        elif hasattr(parent, 'fonts'):
+            self.fonts = self.read_font(None, parent)
+        else:
+            self.fonts = None
+
         if 'position' in cnfg:
             cpos = cnfg['position']
             self.position = (cpos[0], cpos[1], cpos[2])
@@ -172,31 +196,31 @@ class Panel(object) :
             
         if 'view' in cnfg:
             self.view = View(cnfg['view'], parent)
-
         elif hasattr(parent, 'view'):
             self.view = View(None, parent)
 
         if 'axes' in cnfg:
-            self.axes = Axes(cnfg['axes'], parent)
+            self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts)
         elif hasattr(parent, 'axes'):
-            self.axes = Axes(None, parent)
+            self.axes = Axes(None, parent, fonts=self.fonts)
         else:
             self.axes = None
             
         if 'labels' in cnfg:
-            self.labels = mrk.Label(cnfg['labels'], parent)
+            self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
         elif hasattr(parent, 'markers'):
-            self.labels = mrk.Label(None, parent)
+            self.labels = mrk.Label(None, parent, fonts=self.fonts)
 
         if 'markers' in cnfg:
-            self.markers = mrk.Marker(cnfg['markers'], parent)
+            self.markers = mrk.Marker(cnfg['markers'], parent, fonts=self.fonts)
         elif hasattr(parent, 'markers'):
-            self.markers = mrk.Marker(None, parent)
+            self.markers = mrk.Marker(None, parent, fonts=self.fonts)
 
         if 'colorbar' in cnfg:
-            self.colorbar = dsp.Colorbar(cnfg['colorbar'], parent)
+            self.colorbar = dsp.Colorbar(cnfg['colorbar'], parent,
+                                         fonts=self.fonts)
         elif hasattr(parent, 'colorbar'):
-            self.colorbar = dsp.Colorbar(None, parent)
+            self.colorbar = dsp.Colorbar(None, parent, fonts=self.fonts)
             
         dataset_list = []
 
@@ -212,6 +236,23 @@ class Panel(object) :
 
 
             
+    @staticmethod
+    def read_font(ff, parent):
+
+        if hasattr(parent, 'fonts'):
+            dct = copy.deepcopy(parent.fonts)
+        else :
+            dct = {}
+
+        if ff != None:
+            for prop in ['family', 'style', 'size', 'variant', 'stretch',
+                         'weight']:
+                if prop in ff :
+                    dct[prop] = ff[prop]
+        return dct
+
+
+
     def add_panel(self, fig, gc, idx):
         """Adds a panel to the figure.
 
@@ -348,27 +389,29 @@ class View(object) :
 class Axes(object):
     """Class that contains the definition of the plot axes."""
     
-    def __init__(self, cfg, parent):
+    def __init__(self, cfg, parent, fonts=None):
 
         if cfg != None and 'axes_labels' in cfg:
             if hasattr(parent, 'axes'):
-                self.read_axes_labels(cfg['axes_labels'], parent.axes)
+                self.read_axes_labels(cfg['axes_labels'], parent.axes,
+                                      fonts=fonts)
             else :
-                self.read_axes_labels(cfg['axes_labels'], None)
+                self.read_axes_labels(cfg['axes_labels'], None, fonts=fonts)
         else:
             try:
-                self.read_axes_labels(None, parent.axes)
+                self.read_axes_labels(None, parent.axes, fonts=fonts)
             except AttributeError:
                 pass
 
         if cfg != None and 'tick_labels' in cfg:
             if hasattr(parent, 'axes'):
-                self.read_tick_labels(cfg['tick_labels'], parent.axes)
+                self.read_tick_labels(cfg['tick_labels'], parent.axes,
+                                      fonts=fonts)
             else :
-                self.read_tick_labels(cfg['tick_labels'], None)
+                self.read_tick_labels(cfg['tick_labels'], None, fonts=fonts)
         else:
             try:
-                self.read_tick_labels(None, parent.axes)
+                self.read_tick_labels(None, parent.axes, fonts=fonts)
             except AttributeError:
                 pass
 
@@ -385,7 +428,7 @@ class Axes(object):
 
 
 
-    def read_axes_labels(self, ax, parent):
+    def read_axes_labels(self, ax, parent, fonts=None):
         """Read the configuration labels for the axes labels.""" 
 
         for at in ['xposition', 'yposition', 'xpad', 'ypad', 'xtext', 'ytext']:
@@ -395,7 +438,9 @@ class Axes(object):
                 setattr(self, at, getattr(parent, at))
 
         if hasattr(parent, 'axis_font'):
-            self.axis_font = parent.axis_font.copy()
+            self.axis_font = copy.deepcopy(parent.axis_font)
+        elif fonts != None :
+            self.axis_font = copy.deepcopy(fonts)
         else :
             self.axis_font = {}
 
@@ -441,7 +486,7 @@ class Axes(object):
                 
 
             
-    def read_tick_labels(self, tl, parent):
+    def read_tick_labels(self, tl, parent, fonts=None):
         """Read the configuration for the tick labels.""" 
 
         if tl != None and 'hide' in tl:
@@ -456,7 +501,9 @@ class Axes(object):
                 setattr(self, 'ticklabel_'+at, getattr(parent, 'ticklabel_'+at))
 
         if hasattr(parent, 'ticklabel_font'):
-            self.ticklabel_font = parent.ticklabel_font.copy()
+            self.ticklabel_font = copy.deepcopy(parent.ticklabel_font)
+        elif fonts != None:
+            self.ticklabel_font = copy.deepcopy(fonts)
         else :
             self.ticklabel_font = {}
 

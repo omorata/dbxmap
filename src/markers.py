@@ -29,7 +29,7 @@ class Marker(object) :
     defaults = [False, [0,0], 5]
 
     
-    def __init__ (self, cfg, parent):
+    def __init__ (self, cfg, parent, fonts=None):
 
         property_list = self.props[:]
         property_list.extend(self.style_props)
@@ -48,6 +48,10 @@ class Marker(object) :
             self.marker_props = copy.deepcopy(parent.marker_props)
         else :
             self.marker_props = self.default_marker_props()
+
+            if fonts != None:
+                for p in fonts:
+                    self.marker_props[p] = fonts[p]
 
         if cfg != None :
             for prop in property_list :
@@ -310,7 +314,7 @@ class Label(object):
     ini_properties = [ 'relative']
     defaults = [False]
 
-    def __init__(self, cfg, parent):
+    def __init__(self, cfg, parent, fonts=None):
 
         if hasattr(parent, 'labels') :
             self.label_list = copy.deepcopy(parent.labels.label_list)
@@ -323,6 +327,10 @@ class Label(object):
             self.label_props = copy.deepcopy(parent.label_props)
         else:
             self.label_props = self.default_label_props()
+
+            if fonts != None:
+                for p in fonts:
+                    self.label_props[p] = fonts[p]
 
 
 
