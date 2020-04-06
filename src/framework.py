@@ -113,6 +113,9 @@ class Frame(object):
         if 'axes' in cnfg:
             self.axes = Axes(cnfg['axes'], self)
 
+        if 'colorbar' in cnfg:
+            self.colorbar = dsp.Colorbar(cnfg['colorbar'], self)
+
             
         self.wd = dirs['wkdir']
 
@@ -180,12 +183,6 @@ class Panel(object) :
         else:
             self.axes = None
             
-        #if hasattr(parent, 'labels') and parent.labels != None:
-        #    self.labels = parent.labels
-        #    self.label_props = parent.labels.label_props.copy()
-        #else :
-        #    self.labels = None
-
         if 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent)
         elif hasattr(parent, 'markers'):
@@ -197,7 +194,9 @@ class Panel(object) :
             self.markers = mrk.Marker(None, parent)
 
         if 'colorbar' in cnfg:
-            self.colorbar = dsp.Colorbar(cnfg['colorbar'], self)
+            self.colorbar = dsp.Colorbar(cnfg['colorbar'], parent)
+        elif hasattr(parent, 'colorbar'):
+            self.colorbar = dsp.Colorbar(None, parent)
             
         dataset_list = []
 

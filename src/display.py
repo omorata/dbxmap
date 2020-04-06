@@ -7,6 +7,7 @@
 ## module containing classes that process and display the map data
 ##
 
+import copy
 import os
 import sys
 
@@ -271,54 +272,6 @@ class Pixrange(object):
             
 
             
-class Colorbar(object):
-    """creat colorbar"""
-
-    def __init__(self, cnfg, parent) :
-        """Initialization of a colorbar object."""
-        
-        self.add = 'y'
-        
-        if cnfg != None and 'width' in cnfg:
-            self.width = float(cnfg['width'])
-        else :
-            try:
-                self.width = parent.colorbar.width
-
-            except AttributeError:
-                self.width = 0.3
-            
-        if cnfg != None and 'location' in cnfg:
-            self.location = cnfg['location']
-        else :
-            try:
-                self.location = parent.colorbar.location
-
-            except AttributeError:
-                self.location = 'right'
-
-            
-        if cnfg != None and 'text' in cnfg:
-            self.text = cnfg['text']
-        else :
-            try:
-                self.text = parent.colorbar.text
-
-            except AttributeError:
-                self.text = ''
-
-
-
-    def set_colorbar(self, g):
-        """Set the colobar in the panel."""
-
-        g.add_colorbar()
-        g.colorbar.set_width(self.width)
-        g.colorbar.set_location(self.location)
-        g.colorbar.set_axis_label_text(self.text)
-
-
-                
 class Contour(object):
     """ Create contours.
     """
@@ -479,3 +432,98 @@ class Contour(object):
             lv += lev_list[2]
 
         self.add_levels(gen_levs)
+
+
+
+
+class Colorbar(object):
+    """creat colorbar"""
+
+    property_list = ['location', 'width', 'label_pad', 'label_rotation',
+                     'label_text', 'box', 'frame_color', 'frame_linewidth',
+                     'labels', 'pad', 'ticks', 'hide']
+
+    # not implemented yet:
+    # box
+    # frame_color
+    # frame_linewidth
+    # label_properties ()
+    # hide
+    # show
+    # log_format
+
+    def __init__(self, cnfg, parent) :
+        """Initialization of a colorbar object."""
+
+        self.add = 'y'
+
+        for pr in self.property_list:
+            if cnfg != None and pr in cnfg:
+                setattr(self, pr, cnfg[pr])
+            else :
+                try:
+                    setattr(self, pr, getattr(parent.colorbar, pr))
+                except AttributeError:
+                    pass
+
+
+        for pr in ['font', 'label_font']:
+            if cnfg != None and pr in cnfg:
+
+                if hasattr(parent, pr):
+                    setattr(self, pr,
+                            copy.deepcopy(getattr(parent.colorbar, pr)))
+                else :
+                    setattr(self, pr, {})
+
+                ff = cnfg[pr]
+
+                for prop in ['family', 'style', 'size', 'variant', 'stretch',
+                             'weight']:
+                    dct = getattr(self, pr)
+                    if prop in ff :
+                        dct[prop] = ff[prop]
+
+                    setattr(self, pr, dct)
+            else:
+                try:
+                    setattr(self, pr,
+                            copy.deepcopy(getattr(parent.colorbar, pr)))
+                except AttributeError:
+                    pass
+
+
+
+    def set_colorbar(self, g):
+        """Set the colobar in the panel."""
+
+        g.add_colorbar()
+        if hasattr(self, 'width'):
+            g.colorbar.set_width(float(self.width))
+        if hasattr(self, 'location'):
+            g.colorbar.set_location(self.location)
+        if hasattr(self, 'label_text'):
+            g.colorbar.set_axis_label_text(self.label_text)
+        if hasattr(self, 'font'):
+            g.colorbar.set_font(**self.font)
+
+        if hasattr(self, 'label_rotation'):
+            g.colorbar.set_axis_label_rotation(self.label_rotation)
+        if hasattr(self, 'label_pad'):
+            g.colorbar.set_axis_label_pad(self.label_pad)
+        if hasattr(self, 'label_font'):
+            g.colorbar.set_axis_label_font(**self.label_font)
+
+        if hasattr(self, 'labels'):
+            g.colorbar.set_labels(self.labels)
+
+        if hasattr(self, 'pad'):
+            g.colorbar.set_pad(self.pad)
+
+        if hasattr(self, 'ticks'):
+            g.colorbar.set_ticks(self.ticks)
+
+        if hasattr(self, 'hide'):
+            if self.hide: 
+                g.colorbar.hide()
+
