@@ -452,7 +452,7 @@ class Colorbar(object):
     # show
     # log_format
 
-    def __init__(self, cnfg, parent) :
+    def __init__(self, cnfg, parent, fonts=None) :
         """Initialization of a colorbar object."""
 
         self.add = 'y'
@@ -473,6 +473,8 @@ class Colorbar(object):
                 if hasattr(parent, pr):
                     setattr(self, pr,
                             copy.deepcopy(getattr(parent.colorbar, pr)))
+                elif fonts != None:
+                    setattr(self, pr, self.copyfonts(fonts))
                 else :
                     setattr(self, pr, {})
 
@@ -490,7 +492,17 @@ class Colorbar(object):
                     setattr(self, pr,
                             copy.deepcopy(getattr(parent.colorbar, pr)))
                 except AttributeError:
-                    pass
+                    if fonts != None:
+                        setattr(self, pr, self.copyfonts(fonts))
+
+
+
+    @staticmethod
+    def copyfonts(fnt):
+        dct = {}
+        for p in fnt:
+            dct[p] = fnt[p]
+        return dct
 
 
 
