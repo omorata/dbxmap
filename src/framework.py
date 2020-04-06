@@ -18,7 +18,9 @@ import numpy as np
 
 import display as dsp
 import markers as mrk
+import astropy.units as u
 
+import re
 
 class Figure(object):
     """Define object Figure."""
@@ -346,7 +348,7 @@ class View(object) :
 
         if self.vtype == 'radius' :
             if cnfg != None and 'radius' in cnfg:
-                self.radius = cnfg['radius']
+                self.radius = self.read_units(cnfg['radius'] )
 
             else:
                 try:
@@ -385,7 +387,28 @@ class View(object) :
                        height=self.box[0], width=self.box[1])
 
 
-            
+
+    @staticmethod
+    def read_units(val):
+        a = str(val)
+        if re.match('^[0-9\.]*$', a) or re.match('^[0-9]*$',a) :
+            return float(val)
+        
+        elif re.match('.*arcmin$', a):
+            new = a.split('arcmin')[0] * u.arcmin
+            return (new.to(u.degree))
+        elif re.match('.*arcsec$', a):
+            new = a.split('arcsec')[0] * u.arcsec
+            return (new.to(u.degree))
+        elif re.match('.*deg$', a):
+            return a.split('deg')[0]
+        else:
+            print("ERROR: unrecognized units")
+            sys.exit(1)
+
+
+
+
 class Axes(object):
     """Class that contains the definition of the plot axes."""
     
