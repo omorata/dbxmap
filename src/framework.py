@@ -180,16 +180,17 @@ class Panel(object) :
         else:
             self.axes = None
             
-        if hasattr(parent, 'labels') and parent.labels != None:
-            self.labels = parent.labels
-            self.label_props = parent.labels.label_props.copy()
-        else :
-            self.labels = None
+        #if hasattr(parent, 'labels') and parent.labels != None:
+        #    self.labels = parent.labels
+        #    self.label_props = parent.labels.label_props.copy()
+        #else :
+        #    self.labels = None
 
         if 'labels' in cnfg:
-            self.labels = mrk.Label(cnfg['labels'], self)
+            self.labels = mrk.Label(cnfg['labels'], parent)
+        elif hasattr(parent, 'markers'):
+            self.labels = mrk.Label(None, parent)
 
-            
         if 'markers' in cnfg:
             self.markers = mrk.Marker(cnfg['markers'], parent)
         elif hasattr(parent, 'markers'):

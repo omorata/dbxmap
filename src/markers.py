@@ -7,6 +7,7 @@
 ## module containing classes related to makers and labels
 ##
 
+import copy
 import os
 import sys
 
@@ -16,34 +17,42 @@ import numpy as np
 
 class Marker(object) :
     """Class to define markers (including polygons)."""
+
+    style_props = ['edgecolor', 'linewidth', 'linestyle', 'facecolor', 'alpha',
+                   'zorder'] 
+    lstyle_props = ['color', 'family', 'style', 'variant', 'stretch', 'weight',
+                    'size']
+
+    props = ['type', 'show_label', 'lpad', 'alpha', 'zorder', 'linecolor']
     
-    properties = ['type', 'edgecolor', 'linewidth', 'linestyle',
-                  'facecolor', 'show_label', 'color', 'weight', 'size',
-                  'lpad', 'alpha', 'zorder', 'linecolor']
-    defaults = ['', 'black', 1.0, 'solid', 'none', False, 'black',
-                'normal', 12, [0,0], 1.0, 50, 'black']
+    ini_properties = ['show_label', 'lpad', 'zorder']
+    defaults = [False, [0,0], 5]
 
     
     def __init__ (self, cfg, parent):
 
+        property_list = self.props[:]
+        property_list.extend(self.style_props)
+        property_list.extend(self.lstyle_props)
+
         self.wkdir = parent.wkdir
         
         if hasattr(parent, 'markers'):
-            self.marklist = parent.markers.marklist.copy()
+            self.marklist = copy.deepcopy(parent.markers.marklist)
         else:
             self.marklist = []
 
-        if hasattr(parent, 'marker_props') :
-            self.marker_props = parent.marker_props.copy()
+        if hasattr(parent, 'markers'):
+            self.marker_props = copy.deepcopy(parent.markers.marker_props)
+        elif hasattr(parent, 'marker_props'):
+            self.marker_props = copy.deepcopy(parent.marker_props)
         else :
             self.marker_props = self.default_marker_props()
 
-            
         if cfg != None :
-            for prop in self.properties :
+            for prop in property_list :
                 if prop in cfg:
                     self.marker_props[prop] = cfg[prop]
-
 
             if 'file' in cfg:
                 fname = os.path.join(self.wkdir, cfg['file'])
@@ -57,14 +66,13 @@ class Marker(object) :
                 for mrk in marker_str :
                     self.marklist.append(Marker(cfg[mrk], self))
 
-                
 
                 
     def default_marker_props(self):
         """Define default values for marker properties."""
 
         props = { key:value for key, value in
-                  zip(self.properties, self.defaults) }
+                  zip(self.ini_properties, self.defaults) }
         return props
 
 
@@ -139,20 +147,21 @@ class Marker(object) :
         """Adds the line and text styles to the marker."""
 
         style = {}
-        for ss in ['edgecolor', 'linewidth', 'linestyle', 'facecolor',
-                   'alpha', 'zorder']:
-            style[ss] =  self.marker_props[ss]
+        for ss in self.style_props:
+            if ss in self.marker_props:
+                style[ss] =  self.marker_props[ss]
 
         attrib['style'] = style
 
         labelstyle = {}
-        for ls in ['color', 'weight', 'size']:
-            labelstyle[ls] =  self.marker_props[ls]
+        for ls in self.lstyle_props:
+            if ls in self.marker_props :
+                labelstyle[ls] =  self.marker_props[ls]
 
         attrib['l_style'] = labelstyle
 
-
         attrib['lpad'] = self.marker_props['lpad']
+
         return attrib
 
 
@@ -291,29 +300,34 @@ class Marker(object) :
 
 
 
+
 class Label(object):
     """Create a label."""
 
-    properties = [ 'color', 'relative', 'position', 'size', 'style', 'text']
-    defaults = ['black', False, [0.1, 0.9], 12, 'normal', ""]
+    property_list = ['text', 'relative', 'position', 'color', 'size',
+                     'style', 'family', 'variant', 'stretch', 'weight']
+    
+    ini_properties = [ 'relative']
+    defaults = [False]
 
     def __init__(self, cfg, parent):
 
-        if hasattr(parent, 'labels') and parent.labels != None :
-            self.label_list = parent.labels.label_list.copy()
+        if hasattr(parent, 'labels') :
+            self.label_list = copy.deepcopy(parent.labels.label_list)
         else:
             self.label_list = []
 
-        if hasattr(parent, 'label_props') :
-            self.label_props = parent.label_props.copy()
-        else :
+        if hasattr(parent, 'labels') :
+            self.label_props = copy.deepcopy(parent.labels.label_props)
+        elif hasattr(parent, 'label_props'):
+            self.label_props = copy.deepcopy(parent.label_props)
+        else:
             self.label_props = self.default_label_props()
 
-        property_list = ['text', 'relative', 'position', 'color', 'size',
-                         'style', 'family', 'variant', 'stretch', 'weight']
+
 
         if cfg != None:
-            for prop in property_list :
+            for prop in self.property_list :
                 if prop in cfg:
                     self.label_props[prop] = cfg[prop]
 
@@ -340,7 +354,7 @@ class Label(object):
         """Define default values for label properties."""
 
         props = { key:value for key, value in
-                  zip(self.properties, self.defaults) }
+                  zip(self.ini_properties, self.defaults) }
 
         return props
 
