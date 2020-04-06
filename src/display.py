@@ -89,7 +89,7 @@ class Dataset(object) :
 
         center = (w.wcs.crval[0], w.wcs.crval[1])
 
-        return center
+        return center,hdulist
     
 
     

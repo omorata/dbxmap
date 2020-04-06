@@ -269,14 +269,25 @@ class Panel(object) :
         cid = 0
         for d in self.datasets :
             if cid == 0 :
+                hdulist = None
                 if vw.center == None:
-                    vw.center = d.get_reference()
+                    vw.center,hdulist = d.get_reference()
+                if hdulist == None :
 
-                gc.append(aplpy.FITSFigure(d.filename,
-                                           figure=fig,
-                                           subplot=self.position,
-                                           dimensions=d.dims))
+                    gc.append(aplpy.FITSFigure(d.filename,
+                                               figure=fig,
+                                               subplot=self.position,
+                                               dimensions=d.dims))
+                else :
+                    hdulist[0].header['crval1'] = 0.
+                    hdulist[0].header['crval2'] = 0.
+                    vw.center = [0.,0.]
+                    gc.append(aplpy.FITSFigure(hdulist,
+                                               figure=fig,
+                                               subplot=self.position,
+                                               dimensions=d.dims))
 
+                    hdulist.close()
                 vw.set_view(gc[idx])
 
             d.show(gc[idx])
