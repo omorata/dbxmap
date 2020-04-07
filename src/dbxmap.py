@@ -15,10 +15,6 @@ import configure as cfg
 # allow use of LaTex in the texts
 #
 #matplotlib.rcParams['text.usetex'] = True
-#matplotlib.rcParams['font.family'] = 'serif'
-#matplotlib.rcParams['font.serif'] = 'Times'
-#matplotlib.rcParams['font.sans-serif'] = 'Helvetica'
-
 
 
 ##-- Main --------------------------------------------------------------

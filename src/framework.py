@@ -10,17 +10,17 @@
 
 import copy
 import os
+import re
 import sys
 
 import aplpy
+import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 
 import display as dsp
 import markers as mrk
-import astropy.units as u
 
-import re
 
 class Figure(object):
     """Define object Figure."""
@@ -271,25 +271,13 @@ class Panel(object) :
         cid = 0
         for d in self.datasets :
             if cid == 0 :
-                hdulist = None
                 if vw.center == None:
-                    vw.center,hdulist = d.get_reference()
-                if hdulist == None :
+                    vw.center = d.get_reference()
 
-                    gc.append(aplpy.FITSFigure(d.filename,
-                                               figure=fig,
-                                               subplot=self.position,
-                                               dimensions=d.dims))
-                else :
-                    hdulist[0].header['crval1'] = 0.
-                    hdulist[0].header['crval2'] = 0.
-                    vw.center = [0.,0.]
-                    gc.append(aplpy.FITSFigure(hdulist,
-                                               figure=fig,
-                                               subplot=self.position,
-                                               dimensions=d.dims))
-
-                    hdulist.close()
+                gc.append(aplpy.FITSFigure(d.filename,
+                                           figure=fig,
+                                           subplot=self.position,
+                                           dimensions=d.dims))
                 vw.set_view(gc[idx])
 
             d.show(gc[idx])
