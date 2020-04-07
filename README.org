@@ -1,9 +1,9 @@
 * dbxmap
 *dbxmap* is a tool for plotting astronomical maps from FITS files
 
-The goal of the project is to be able to plot /any kind/ of astronomical map out
-of a fits file (continuum maps, data cubes, etc) in a reasonably simple way.
-*dbxmap* is a front end to APLpy for a set of pre-defined types of plots.
+The goal of the project is to be able to plot /any kind/ of astronomical map
+from of a fits file (continuum maps, data cubes, etc) in a reasonably simple
+way. *dbxmap* is a front end to APLpy for a set of pre-defined types of plots.
 
 The plotting is controlled by a YAML configuration file that, at this moment,
 allows to define, among other things:
@@ -12,12 +12,13 @@ allows to define, among other things:
   + number of panels in the figure
   + plot data as a pixel map and/or as contours with, hopefully, full control
     on their definition
-  + control over axes and ticks properties
+  + control over axes and tick properties
+  + set labels on the panels
   + plot beam size of the data
   + show a colorbar with the pixel data range
-  + overlay polygons
-  + labels on the panels
-  + markers on the plot
+  + overlay polygons, lines, ellipses and symbol markers, with associated
+    labels
+
 
 This is a work in progress and not all the planned functionalities are
 implemented yet
@@ -25,15 +26,20 @@ implemented yet
 
 ** configuration file
 
-The data is plotted using a YAML configuration file, which contains the
+The data is plotted using a YAML configuration file that contains the
 definition of all the elements that should be in the map. The upper structure
-of the file is divided into a *page* section containing the general definition
-of the figure and a *panels* section with the information that will be contained
-into the panel(s) of the plot.
+of the file is divided into:
+- a *page* section containing the general definition of the figure
+- a *panels* section with the information that will be contained into the
+  panel(s) of the plot. The structure of this section is, in general, divided
+  into:
+  - a part with definitions that will affect all panels
+  - the definition of each panel
 
 *** Page section
 It may contain the entries:
-- outfile :: name of output file
+- name :: name of the plot
+- outfile :: name of the output file
 - dpi :: dots per inch of the output file
 - size :: two element list with the size in cm
 
@@ -42,19 +48,25 @@ The /Panels/ section contains the definition of each desired panel, plus
 optional options that affect all the panels. Some fields are:
 - yx :: defining the panel grid. List of two values for the range in the /y/ and
         /x axes/.
-- view :: defining the view of the map. Possible subfields:
+- font :: definition of the default font
+- view :: definition of the view of the map. Possible subfields:
   - type :: type of view selection: 'radius' or 'box'
   - center :: center position of the map. If not present, calculated from the
               reference position of the fits file
   - radius :: radius, in deg, for the /radius/ view 
+- axes :: definition of axes properties
+  - /axes_labels/
+  - /ticks/
+  - /tick_labels/
 - labels :: definition of labels present in all panels
 - contours :: contour definition for all panels
 - pixrange :: pixel scale definition for all panels
+- colorbar :: showing the range of a pixel range
 - markers :: markers defined in all panels.
 - panel-xx :: proper definition of panels. All must start with the string
               /panel/ and then some identifier  
 
-**** panel definition
+*** panel definition
 The /panel_xx/ definition controls how the data will be shown in each panel and
 which other objects may be in it: 
 - datasets :: by definition, each panel has to have the definition of at least
