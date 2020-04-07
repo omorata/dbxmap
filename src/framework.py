@@ -20,7 +20,9 @@ import numpy as np
 
 import display as dsp
 import markers as mrk
+import astropy.units as u
 
+import re
 
 class Figure(object):
     """Define object Figure."""
