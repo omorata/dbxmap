@@ -20,9 +20,7 @@ import numpy as np
 
 import display as dsp
 import markers as mrk
-import astropy.units as u
 
-import re
 
 class Figure(object):
     """Define object Figure."""
@@ -214,17 +212,23 @@ class Panel(object) :
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
         elif hasattr(parent, 'markers'):
             self.labels = mrk.Label(None, parent, fonts=self.fonts)
+        else:
+            self.labels = None
 
         if 'markers' in cnfg:
             self.markers = mrk.Marker(cnfg['markers'], parent, fonts=self.fonts)
         elif hasattr(parent, 'markers'):
             self.markers = mrk.Marker(None, parent, fonts=self.fonts)
+        else:
+            self.markers = None
 
         if 'colorbar' in cnfg:
             self.colorbar = dsp.Colorbar(cnfg['colorbar'], parent,
                                          fonts=self.fonts)
         elif hasattr(parent, 'colorbar'):
             self.colorbar = dsp.Colorbar(None, parent, fonts=self.fonts)
+        else:
+            self.colorbar = None
             
         dataset_list = []
 
