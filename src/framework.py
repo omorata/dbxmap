@@ -18,7 +18,9 @@ import numpy as np
 
 import display as dsp
 import markers as mrk
+import astropy.units as u
 
+import re
 
 class Figure(object):
     """Define object Figure."""
@@ -269,14 +271,25 @@ class Panel(object) :
         cid = 0
         for d in self.datasets :
             if cid == 0 :
+                hdulist = None
                 if vw.center == None:
-                    vw.center = d.get_reference()
+                    vw.center,hdulist = d.get_reference()
+                if hdulist == None :
 
-                gc.append(aplpy.FITSFigure(d.filename,
-                                           figure=fig,
-                                           subplot=self.position,
-                                           dimensions=d.dims))
+                    gc.append(aplpy.FITSFigure(d.filename,
+                                               figure=fig,
+                                               subplot=self.position,
+                                               dimensions=d.dims))
+                else :
+                    hdulist[0].header['crval1'] = 0.
+                    hdulist[0].header['crval2'] = 0.
+                    vw.center = [0.,0.]
+                    gc.append(aplpy.FITSFigure(hdulist,
+                                               figure=fig,
+                                               subplot=self.position,
+                                               dimensions=d.dims))
 
+                    hdulist.close()
                 vw.set_view(gc[idx])
 
             d.show(gc[idx])
@@ -346,7 +359,7 @@ class View(object) :
 
         if self.vtype == 'radius' :
             if cnfg != None and 'radius' in cnfg:
-                self.radius = cnfg['radius']
+                self.radius = self.read_units(cnfg['radius'] )
 
             else:
                 try:
@@ -385,7 +398,33 @@ class View(object) :
                        height=self.box[0], width=self.box[1])
 
 
-            
+
+    @staticmethod
+    def read_units(val):
+        """Proces a configuration file value containing an angle unit 
+           string.
+        """
+        
+        strval = str(val)
+        #if re.match('^[0-9\.]*$', strval) or re.match('^[0-9]*$',strval):
+        if re.match("^[+-]?\d+(\.\d+)?$", strval):
+            return float(val)
+        
+        elif re.match('.*arcsec$', strval):
+            new = strval.split('arcsec')[0] * u.arcsec
+            return (new.to(u.degree))
+        elif re.match('.*arcmin$', strval):
+            new = strval.split('arcmin')[0] * u.arcmin
+            return (new.to(u.degree))
+        elif re.match('.*deg$', strval):
+            return strval.split('deg')[0]
+        else:
+            print("ERROR: unrecognized units")
+            sys.exit(1)
+
+
+
+
 class Axes(object):
     """Class that contains the definition of the plot axes."""
     
