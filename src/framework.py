@@ -390,18 +390,23 @@ class View(object) :
 
     @staticmethod
     def read_units(val):
-        a = str(val)
-        if re.match('^[0-9\.]*$', a) or re.match('^[0-9]*$',a) :
+        """Proces a configuration file value containing an angle unit 
+           string.
+        """
+        
+        strval = str(val)
+        #if re.match('^[0-9\.]*$', strval) or re.match('^[0-9]*$',strval):
+        if re.match("^[+-]?\d+(\.\d+)?$", strval):
             return float(val)
         
-        elif re.match('.*arcmin$', a):
-            new = a.split('arcmin')[0] * u.arcmin
+        elif re.match('.*arcsec$', strval):
+            new = strval.split('arcsec')[0] * u.arcsec
             return (new.to(u.degree))
-        elif re.match('.*arcsec$', a):
-            new = a.split('arcsec')[0] * u.arcsec
+        elif re.match('.*arcmin$', strval):
+            new = strval.split('arcmin')[0] * u.arcmin
             return (new.to(u.degree))
-        elif re.match('.*deg$', a):
-            return a.split('deg')[0]
+        elif re.match('.*deg$', strval):
+            return strval.split('deg')[0]
         else:
             print("ERROR: unrecognized units")
             sys.exit(1)

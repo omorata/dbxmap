@@ -16,7 +16,7 @@ from astropy.io import fits
 import numpy as np
 
 import markers as mrk
-
+import framework as fw
 
 class Dataset(object) :
     """Create a dataset object."""
@@ -103,13 +103,13 @@ class Dataset(object) :
         """
         
         if 'bmaj' in battr :
-            bmaj = battr['bmaj'] / 3600
+            bmaj = fw.View.read_units(battr['bmaj'])
             self.beam_shape = {'major' : bmaj}
             
         if 'major' in self.beam_shape :
 
             if 'bmin' in battr :
-                self.beam_shape['minor'] = battr['bmin'] / 3600
+                self.beam_shape['minor'] = fw.View.read_units(battr['bmin'])
             else :
                 self.beam_shape['minor'] = bmaj
             
