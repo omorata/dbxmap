@@ -14,6 +14,7 @@ import re
 import sys
 
 import aplpy
+import astropy.coordinates as coord
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
@@ -400,22 +401,15 @@ class View(object) :
         """
         
         strval = str(val)
-        #if re.match('^[0-9\.]*$', strval) or re.match('^[0-9]*$',strval):
-        if re.match("^[+-]?\d+(\.\d+)?$", strval):
-            return float(val)
-        
-        elif re.match('.*arcsec$', strval):
-            new = strval.split('arcsec')[0] * u.arcsec
-            return (new.to(u.degree))
-        elif re.match('.*arcmin$', strval):
-            new = strval.split('arcmin')[0] * u.arcmin
-            return (new.to(u.degree))
-        elif re.match('.*deg$', strval):
-            return strval.split('deg')[0]
-        else:
-            print("ERROR: unrecognized units")
-            sys.exit(1)
 
+        if re.match("^.*[a-z]+.*$", val):
+            try:
+                return (coord.Angle(val).to(u.deg)).degree
+            except ValueError: 
+                print("ERROR: unrecognized definition of units:", val)
+                sys.exit(1)
+        else:
+            return (coord.Angle(val+'deg').to(u.deg)).degree
 
 
 
