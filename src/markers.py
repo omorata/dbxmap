@@ -11,7 +11,9 @@ import copy
 import os
 import sys
 
+import astropy.coordinates as coord
 from astropy.io import ascii
+import astropy.units as u
 import numpy as np
 
 
@@ -219,6 +221,8 @@ class Marker(object) :
         if it['coords'] == 'world_deg' :
             attrib['x'] = float(center[0])
             attrib['y'] = float(center[1])
+        elif it['coords'] == 'radec' :
+            attrib['x'], attrib['y'] = self.readangles(center, 'radec')
 
         attrib['size'] = float(it['size'])
 
@@ -301,6 +305,40 @@ class Marker(object) :
             tuples.append(int(tval[i]))
 
         return tuples
+
+
+
+    @staticmethod
+    def readangles(c, angle_units):
+        """Convert input angle units to degrees.
+
+        Right now, only "radec" is implemented.
+        To be implemented: "offset" "lb"
+        """
+
+        if angle_units == 'radec':
+            n = np.shape(c)[0]
+            if n == 2:
+                if ':' in c[0]:
+                    ra = (coord.Angle(c[0]+' hour')).to(u.deg).degree
+                else :
+                    ra = (coord.Angle(c[0])).to(u.deg).degree
+
+                if ':' in c[1]:
+                    dec = (coord.Angle(c[1]+' degrees')).degree
+                else :
+                    dec = (coord.Angle(c[1])).degree
+
+            elif n == 6:
+                jra = " ".join(c[:3])
+                jdec = " ".join(c[3:])
+                ra = (coord.Angle(jra+' hour')).to(u.deg).degree
+                dec = (coord.Angle(jdec+' degrees')).degree
+            else:
+                print(" >>> ERROR:Wrong format for the input coordinates")
+                sys.exit(1)
+
+            return ra, dec
 
 
 

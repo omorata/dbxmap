@@ -206,7 +206,7 @@ class Panel(object) :
         elif hasattr(parent, 'axes'):
             self.axes = Axes(None, parent, fonts=self.fonts)
         else:
-            self.axes = None
+            self.axes = Axes(None, None, fonts=self.fonts)
             
         if 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
