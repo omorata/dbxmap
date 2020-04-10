@@ -16,6 +16,7 @@ from astropy.io import ascii
 import astropy.units as u
 import numpy as np
 
+import framework as fw
 
 class Marker(object) :
     """Class to define markers (including polygons)."""
@@ -247,12 +248,13 @@ class Marker(object) :
         if it['coords'] == 'world_deg' :
             attrib['x'] = float(center[0])
             attrib['y'] = float(center[1])
+        elif it['coords'] == 'radec' :
+            attrib['x'], attrib['y'] = self.readangles(center, 'radec')
 
         size = it['size'].split(" ")
-        if it['coords'] == 'world_deg' :
-            attrib['maj'] = float(size[0]) / 3600.
-            attrib['min'] = float(size[1]) / 3600.
-            attrib['pa'] = float(size[2])
+        attrib['maj'] = fw.View.read_units(size[0])
+        attrib['min'] = fw.View.read_units(size[1])
+        attrib['pa'] = fw.View.read_units(size[2])
 
         return attrib
 
@@ -272,11 +274,11 @@ class Marker(object) :
         if it['coords'] == 'world_deg' :
             attrib['x'] = float(center[0])
             attrib['y'] = float(center[1])
+        elif it['coords'] == 'radec' :
+            attrib['x'], attrib['y'] = self.readangles(center, 'radec')
 
-            array = np.array([
-                [attrib['x'], float(size[0])],
-                [attrib['y'], float(size[1])]
-            ])
+        array = np.array([ [attrib['x'], float(size[0])],
+                          [attrib['y'], float(size[1])] ])
 
         attrib['line'] = [array]
 
