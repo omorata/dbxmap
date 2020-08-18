@@ -18,6 +18,7 @@ import numpy as np
 
 import framework as fw
 
+
 class Marker(object) :
     """Class to define markers (including polygons)."""
 
@@ -239,7 +240,7 @@ class Marker(object) :
     def read_ellipse(self, it):
         """Read the definition of a ellipse.
 
-        it assumes the major and minor axes are in arcsec.
+        It will transform, if necessary, units to degrees.
         """
 
         attrib = {'id' : it['id'], 'type' : it['type'] }
@@ -263,7 +264,7 @@ class Marker(object) :
     def read_line(self, it):
         """Read the definition of a line.
 
-        it assumes the major and minor axes are in arcsec.
+        It will transform, if necessary, units to degrees.
         """
 
         attrib = {'id' : it['id'], 'type' : it['type'] }
