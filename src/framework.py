@@ -22,6 +22,12 @@ import numpy as np
 import display as dsp
 import markers as mrk
 
+from astropy.io import fits
+from astropy import wcs
+from offset import linear_offset_coords
+
+from astropy.coordinates import SkyCoord, SkyOffsetFrame, ICRS
+
 
 class Figure(object):
     """Define object Figure."""
@@ -278,10 +284,46 @@ class Panel(object) :
         cid = 0
         for d in self.datasets :
             if cid == 0 :
-                if vw.center == None:
-                    vw.center = d.get_reference()
 
-                gc.append(aplpy.FITSFigure(d.filename,
+                #galcen = SkyCoord(0 * u.deg, 0 * u.deg, frame='galactic')
+
+                hdu = fits.open(d.filename)[0]
+                w = wcs.WCS(hdu.header)
+                #print("wcs", w.wcs.crval)
+                #print(w)
+
+                
+                if vw.center == None:
+                    a = d.get_reference()
+                    vw.center = a
+                    #print("a", a)
+                    oo = SkyCoord(ra=a[0]*u.deg, dec=a[1]*u.deg, frame='icrs')
+
+                    target = SkyCoord(ra=a[0]*u.deg, dec=a[1]*u.deg,
+                                      frame='icrs') 
+                    #print("tgt", target)
+                    new = target.transform_to(oo.skyoffset_frame())
+                    ra, dec = new.lon.arcsec, new.lat.arcsec
+                    
+                    print("new", ra, dec)
+
+                    print("-----------------------")
+
+                    vw.center = (ra, dec)
+
+                    w.wcs.crval = ra, dec
+                    w.wcs.ctype = 'XOFFSET', 'YOFFSET'
+                    w.wcs.cunit = 'arcsec', 'arcsec'
+                    delt = w.wcs.cdelt
+                    w.wcs.cdelt = delt*3600
+                    hdu_linear = hdu.copy()
+                    hdu_linear.header = w.to_header()
+                    print(vw.center)
+                    print(w)
+
+
+                #hhh = d.filename
+                gc.append(aplpy.FITSFigure(hdu_linear,
                                            figure=fig,
                                            subplot=self.position,
                                            dimensions=d.dims))
