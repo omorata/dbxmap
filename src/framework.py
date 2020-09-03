@@ -26,7 +26,6 @@ from astropy.io import fits
 from astropy import wcs
 from offset import linear_offset_coords
 
-from astropy.coordinates import SkyCoord, SkyOffsetFrame, ICRS
 
 
 class Figure(object):
@@ -285,51 +284,27 @@ class Panel(object) :
         for d in self.datasets :
             if cid == 0 :
 
-                #galcen = SkyCoord(0 * u.deg, 0 * u.deg, frame='galactic')
-
-                hdu = fits.open(d.filename)[0]
-                w = wcs.WCS(hdu.header)
-                #print("wcs", w.wcs.crval)
-                #print(w)
-
-                
+                # TODO:
+                # check a different center
+                # if offsets, calc new center
+                #  below has to be separated
                 if vw.center == None:
-                    a = d.get_reference()
-                    vw.center = a
-                    #print("a", a)
-                    oo = SkyCoord(ra=a[0]*u.deg, dec=a[1]*u.deg, frame='icrs')
+                    vw.center = d.get_reference()
 
-                    target = SkyCoord(ra=a[0]*u.deg, dec=a[1]*u.deg,
-                                      frame='icrs') 
-                    #print("tgt", target)
-                    new = target.transform_to(oo.skyoffset_frame())
-                    ra, dec = new.lon.arcsec, new.lat.arcsec
-                    
-                    print("new", ra, dec)
-
-                    print("-----------------------")
-
+                refpos = vw.center
+                if vw.coords == 'off' :
+                    hdu, ra, dec = d.to_offsets(vw.center)
                     vw.center = (ra, dec)
-
-                    w.wcs.crval = ra, dec
-                    w.wcs.ctype = 'XOFFSET', 'YOFFSET'
-                    w.wcs.cunit = 'arcsec', 'arcsec'
-                    delt = w.wcs.cdelt
-                    w.wcs.cdelt = delt*3600
-                    hdu_linear = hdu.copy()
-                    hdu_linear.header = w.to_header()
-                    print(vw.center)
-                    print(w)
-
-
-                #hhh = d.filename
-                gc.append(aplpy.FITSFigure(hdu_linear,
+                else :
+                    hdu = d.filename
+                    
+                gc.append(aplpy.FITSFigure(hdu,
                                            figure=fig,
                                            subplot=self.position,
                                            dimensions=d.dims))
                 vw.set_view(gc[idx])
 
-            d.show(gc[idx])
+            d.show(gc[idx], coords=vw.coords, ref=refpos)
 
             cid += 1
 
@@ -422,15 +397,33 @@ class View(object) :
             except: 
                 self.center = None
 
+                
+        if cnfg != None and 'coords' in cnfg:
+            self.coords = cnfg['coords']
+        else :
+            try:
+                self.coords = parent.view.coords
+            except: 
+                self.coords = 'abs'
+
+
+                
+
             
 
     def set_view(self, g):
         """set the view of the panel."""
 
         if self.vtype == 'radius' :
+            if self.coords == 'off':
+                ang = coord.Angle(self.radius * u.deg)
+                self.radius = (ang.to(u.arcsec)).arcsec
             g.recenter(self.center[0], self.center[1], radius=self.radius)
 
         elif self.vtype == 'box' :
+            #TODO
+            # change and test box for offsets
+            #
             g.recenter(self.center[0], self.center[1],
                        height=self.box[0], width=self.box[1])
 
