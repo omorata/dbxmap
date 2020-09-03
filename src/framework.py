@@ -381,7 +381,9 @@ class View(object) :
 
         elif self.vtype == 'box' :
             if cnfg != None  and 'box' in cnfg:
-                self.box = cnfg['box']
+                self.box = (self.read_units(cnfg['box'][0]),
+                            self.read_units(cnfg['box'][1]))
+                      
             else :
                 try:
                     self.box = parent.view.box
