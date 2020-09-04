@@ -15,6 +15,11 @@ from astropy import wcs
 from astropy.io import fits
 import numpy as np
 
+
+import astropy.units as u
+from astropy.coordinates import SkyCoord
+
+
 import markers as mrk
 import framework as fw
 
@@ -90,8 +95,37 @@ class Dataset(object) :
         center = (w.wcs.crval[0], w.wcs.crval[1])
 
         return center
-    
+        
 
+
+    def to_offsets(self, reference, frame='icrs'):
+        """ transforms the coordinates of the fits file to a new frame"""
+
+        hdu = fits.open(self.filename)[0]
+        w = wcs.WCS(hdu.header)
+
+        center = (w.wcs.crval[0], w.wcs.crval[1])
+
+        ref = SkyCoord(ra=reference[0]*u.arcsec, dec=reference[1]*u.arcsec,
+                      frame=frame)
+
+        target = SkyCoord(ra=center[0]*u.arcsec, dec=center[1]*u.arcsec,
+                          frame=frame) 
+
+        new = target.transform_to(ref.skyoffset_frame())
+        ra, dec = new.lon.arcsec, new.lat.arcsec
+                    
+        w.wcs.crval = ra, dec
+        w.wcs.ctype = 'XOFFSET', 'YOFFSET'
+        w.wcs.cunit = 'arcsec', 'arcsec'
+        w.wcs.cdelt = wcs.utils.proj_plane_pixel_scales(w)*3600
+
+        hdu_linear = hdu.copy()
+        hdu_linear.header = w.to_header()
+
+        return hdu_linear, ra, dec
+
+    
     
     def read_beam_parameters(self, battr):
         """Reads the beam parameters from the configuration file
@@ -163,7 +197,7 @@ class Dataset(object) :
                 
 
             
-    def show(self, g) :
+    def show(self, g, **kwargs) :
         """ show the dataset
             It takes into account whether it is a pixel map or a contour
             map
@@ -172,13 +206,13 @@ class Dataset(object) :
             self.show_colorscale(g)
 
         elif self.dtype == 'cntr' :
-            self.show_contour(g)
+            self.show_contour(g, **kwargs)
 
 
             
     def show_colorscale(self, g) :
         """Show a colorscale of the dataset."""
-
+            
         g.show_colorscale(vmin=self.pixrange.range[0],
                           vmax=self.pixrange.range[1],
                           stretch=self.pixrange.stretch,
@@ -187,13 +221,18 @@ class Dataset(object) :
 
 
         
-    def show_contour(self, g) :
+    def show_contour(self, g, coords='abs', ref='') :
         """Show a contour map of the dataset."""
+        
+        if coords == 'off' :
+            hdu, ra, dec = self.to_offsets(ref)
+        else :
+            hdu = self.filename
 
-        g.show_contour(self.filename, levels=self.contour.levels,
-                             colors=self.contour.colors,
-                             linewidths=self.contour.linewidth,
-                             linestyles=self.contour.linestyle)
+        g.show_contour(data=hdu,levels=self.contour.levels,
+                       colors=self.contour.colors,
+                       linewidths=self.contour.linewidth,
+                       linestyles=self.contour.linestyle)
         
 
 

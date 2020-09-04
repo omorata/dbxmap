@@ -22,6 +22,11 @@ import numpy as np
 import display as dsp
 import markers as mrk
 
+from astropy.io import fits
+from astropy import wcs
+from offset import linear_offset_coords
+
+
 
 class Figure(object):
     """Define object Figure."""
@@ -278,16 +283,28 @@ class Panel(object) :
         cid = 0
         for d in self.datasets :
             if cid == 0 :
+
+                # TODO:
+                # check a different center
+                # if offsets, calc new center
+                #  below has to be separated
                 if vw.center == None:
                     vw.center = d.get_reference()
 
-                gc.append(aplpy.FITSFigure(d.filename,
+                refpos = vw.center
+                if vw.coords == 'off' :
+                    hdu, ra, dec = d.to_offsets(vw.center)
+                    vw.center = (ra, dec)
+                else :
+                    hdu = d.filename
+                    
+                gc.append(aplpy.FITSFigure(hdu,
                                            figure=fig,
                                            subplot=self.position,
                                            dimensions=d.dims))
                 vw.set_view(gc[idx])
 
-            d.show(gc[idx])
+            d.show(gc[idx], coords=vw.coords, ref=refpos)
 
             cid += 1
 
@@ -364,7 +381,9 @@ class View(object) :
 
         elif self.vtype == 'box' :
             if cnfg != None  and 'box' in cnfg:
-                self.box = cnfg['box']
+                self.box = (self.read_units(cnfg['box'][0]),
+                            self.read_units(cnfg['box'][1]))
+                      
             else :
                 try:
                     self.box = parent.view.box
@@ -380,15 +399,33 @@ class View(object) :
             except: 
                 self.center = None
 
+                
+        if cnfg != None and 'coords' in cnfg:
+            self.coords = cnfg['coords']
+        else :
+            try:
+                self.coords = parent.view.coords
+            except: 
+                self.coords = 'abs'
+
+
+                
+
             
 
     def set_view(self, g):
         """set the view of the panel."""
 
         if self.vtype == 'radius' :
+            if self.coords == 'off':
+                ang = coord.Angle(self.radius * u.deg)
+                self.radius = (ang.to(u.arcsec)).arcsec
             g.recenter(self.center[0], self.center[1], radius=self.radius)
 
         elif self.vtype == 'box' :
+            #TODO
+            # change and test box for offsets
+            #
             g.recenter(self.center[0], self.center[1],
                        height=self.box[0], width=self.box[1])
 
