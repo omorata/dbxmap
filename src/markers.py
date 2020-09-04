@@ -11,8 +11,12 @@ import copy
 import os
 import sys
 
+import astropy.coordinates as coord
 from astropy.io import ascii
+import astropy.units as u
 import numpy as np
+
+import framework as fw
 
 
 class Marker(object) :
@@ -219,6 +223,8 @@ class Marker(object) :
         if it['coords'] == 'world_deg' :
             attrib['x'] = float(center[0])
             attrib['y'] = float(center[1])
+        elif it['coords'] == 'radec' :
+            attrib['x'], attrib['y'] = self.readangles(center, 'radec')
 
         attrib['size'] = float(it['size'])
 
@@ -234,7 +240,7 @@ class Marker(object) :
     def read_ellipse(self, it):
         """Read the definition of a ellipse.
 
-        it assumes the major and minor axes are in arcsec.
+        It will transform, if necessary, units to degrees.
         """
 
         attrib = {'id' : it['id'], 'type' : it['type'] }
@@ -243,12 +249,13 @@ class Marker(object) :
         if it['coords'] == 'world_deg' :
             attrib['x'] = float(center[0])
             attrib['y'] = float(center[1])
+        elif it['coords'] == 'radec' :
+            attrib['x'], attrib['y'] = self.readangles(center, 'radec')
 
         size = it['size'].split(" ")
-        if it['coords'] == 'world_deg' :
-            attrib['maj'] = float(size[0]) / 3600.
-            attrib['min'] = float(size[1]) / 3600.
-            attrib['pa'] = float(size[2])
+        attrib['maj'] = fw.View.read_units(size[0])
+        attrib['min'] = fw.View.read_units(size[1])
+        attrib['pa'] = fw.View.read_units(size[2])
 
         return attrib
 
@@ -257,7 +264,7 @@ class Marker(object) :
     def read_line(self, it):
         """Read the definition of a line.
 
-        it assumes the major and minor axes are in arcsec.
+        It will transform, if necessary, units to degrees.
         """
 
         attrib = {'id' : it['id'], 'type' : it['type'] }
@@ -268,11 +275,11 @@ class Marker(object) :
         if it['coords'] == 'world_deg' :
             attrib['x'] = float(center[0])
             attrib['y'] = float(center[1])
+        elif it['coords'] == 'radec' :
+            attrib['x'], attrib['y'] = self.readangles(center, 'radec')
 
-            array = np.array([
-                [attrib['x'], float(size[0])],
-                [attrib['y'], float(size[1])]
-            ])
+        array = np.array([ [attrib['x'], float(size[0])],
+                          [attrib['y'], float(size[1])] ])
 
         attrib['line'] = [array]
 
@@ -301,6 +308,40 @@ class Marker(object) :
             tuples.append(int(tval[i]))
 
         return tuples
+
+
+
+    @staticmethod
+    def readangles(c, angle_units):
+        """Convert input angle units to degrees.
+
+        Right now, only "radec" is implemented.
+        To be implemented: "offset" "lb"
+        """
+
+        if angle_units == 'radec':
+            n = np.shape(c)[0]
+            if n == 2:
+                if ':' in c[0]:
+                    ra = (coord.Angle(c[0]+' hour')).to(u.deg).degree
+                else :
+                    ra = (coord.Angle(c[0])).to(u.deg).degree
+
+                if ':' in c[1]:
+                    dec = (coord.Angle(c[1]+' degrees')).degree
+                else :
+                    dec = (coord.Angle(c[1])).degree
+
+            elif n == 6:
+                jra = " ".join(c[:3])
+                jdec = " ".join(c[3:])
+                ra = (coord.Angle(jra+' hour')).to(u.deg).degree
+                dec = (coord.Angle(jdec+' degrees')).degree
+            else:
+                print(" >>> ERROR:Wrong format for the input coordinates")
+                sys.exit(1)
+
+            return ra, dec
 
 
 

@@ -14,12 +14,18 @@ import re
 import sys
 
 import aplpy
+import astropy.coordinates as coord
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 
 import display as dsp
 import markers as mrk
+
+from astropy.io import fits
+from astropy import wcs
+from offset import linear_offset_coords
+
 
 
 class Figure(object):
@@ -206,7 +212,7 @@ class Panel(object) :
         elif hasattr(parent, 'axes'):
             self.axes = Axes(None, parent, fonts=self.fonts)
         else:
-            self.axes = None
+            self.axes = Axes(None, None, fonts=self.fonts)
             
         if 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
@@ -277,16 +283,28 @@ class Panel(object) :
         cid = 0
         for d in self.datasets :
             if cid == 0 :
+
+                # TODO:
+                # check a different center
+                # if offsets, calc new center
+                #  below has to be separated
                 if vw.center == None:
                     vw.center = d.get_reference()
 
-                gc.append(aplpy.FITSFigure(d.filename,
+                refpos = vw.center
+                if vw.coords == 'off' :
+                    hdu, ra, dec = d.to_offsets(vw.center)
+                    vw.center = (ra, dec)
+                else :
+                    hdu = d.filename
+                    
+                gc.append(aplpy.FITSFigure(hdu,
                                            figure=fig,
                                            subplot=self.position,
                                            dimensions=d.dims))
                 vw.set_view(gc[idx])
 
-            d.show(gc[idx])
+            d.show(gc[idx], coords=vw.coords, ref=refpos)
 
             cid += 1
 
@@ -363,7 +381,9 @@ class View(object) :
 
         elif self.vtype == 'box' :
             if cnfg != None  and 'box' in cnfg:
-                self.box = cnfg['box']
+                self.box = (self.read_units(cnfg['box'][0]),
+                            self.read_units(cnfg['box'][1]))
+                      
             else :
                 try:
                     self.box = parent.view.box
@@ -379,15 +399,33 @@ class View(object) :
             except: 
                 self.center = None
 
+                
+        if cnfg != None and 'coords' in cnfg:
+            self.coords = cnfg['coords']
+        else :
+            try:
+                self.coords = parent.view.coords
+            except: 
+                self.coords = 'abs'
+
+
+                
+
             
 
     def set_view(self, g):
         """set the view of the panel."""
 
         if self.vtype == 'radius' :
+            if self.coords == 'off':
+                ang = coord.Angle(self.radius * u.deg)
+                self.radius = (ang.to(u.arcsec)).arcsec
             g.recenter(self.center[0], self.center[1], radius=self.radius)
 
         elif self.vtype == 'box' :
+            #TODO
+            # change and test box for offsets
+            #
             g.recenter(self.center[0], self.center[1],
                        height=self.box[0], width=self.box[1])
 
@@ -400,22 +438,15 @@ class View(object) :
         """
         
         strval = str(val)
-        #if re.match('^[0-9\.]*$', strval) or re.match('^[0-9]*$',strval):
-        if re.match("^[+-]?\d+(\.\d+)?$", strval):
-            return float(val)
-        
-        elif re.match('.*arcsec$', strval):
-            new = strval.split('arcsec')[0] * u.arcsec
-            return (new.to(u.degree))
-        elif re.match('.*arcmin$', strval):
-            new = strval.split('arcmin')[0] * u.arcmin
-            return (new.to(u.degree))
-        elif re.match('.*deg$', strval):
-            return strval.split('deg')[0]
-        else:
-            print("ERROR: unrecognized units")
-            sys.exit(1)
 
+        if re.match("^.*[a-z]+.*$", val):
+            try:
+                return (coord.Angle(val).to(u.deg)).degree
+            except ValueError: 
+                print("ERROR: unrecognized definition of units:", val)
+                sys.exit(1)
+        else:
+            return (coord.Angle(val+'deg').to(u.deg)).degree
 
 
 
