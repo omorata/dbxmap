@@ -96,6 +96,7 @@ class Frame(object):
     def __init__(self, cnfg, dirs):
 
         self.wkdir = dirs['wkdir']
+        self.calc = None
 
         if 'font' in cnfg:
             self.fonts = self.read_font(cnfg['font'])
@@ -107,6 +108,16 @@ class Frame(object):
         else:
             self.yx = [1,1]
 
+        if 'pad' in cnfg:
+            self.pad = cnfg['pad']
+        else :
+            self.pad = None
+
+        if 'margins' in cnfg:
+            self.margins = cnfg['margins']
+        else :
+            self.margins = None
+            
         if 'view' in cnfg:
             self.view = View(cnfg['view'], self)
 
@@ -172,12 +183,35 @@ class Frame(object):
 
         p_idx = 0
         gc = []
-        
+
+        # possibility of reordering panels (order)
+        taken = []
+        for p in self.panels:
+            if p.order != None :
+                taken.append(p.order)
+
+        idx = 0
+        for p in self.panels:
+            if np.shape(p.position)[0] == 3:
+                if p.order != None:
+                    p.position = (p.position[0], p.position[1], p.order+1)
+                else :
+                    if idx in taken :
+                        idx += 1
+                    p.position = (p.position[0], p.position[1], idx+1)
+                    idx += 1
+
+        if self.pad :
+            fig.subplots_adjust(wspace=self.pad[0], hspace=self.pad[1])
+
+        if self.margins:
+            fig.subplots_adjust(left=self.margins[0], right=self.margins[1],
+                                bottom=self.margins[2], top=self.margins[3])
+
         for p in self.panels :
             print("    + plotting panel:", p.name, "...")
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
-
 
             
             
@@ -197,10 +231,23 @@ class Panel(object) :
 
         if 'position' in cnfg:
             cpos = cnfg['position']
-            self.position = (cpos[0], cpos[1], cpos[2])
+            if np.shape(cpos)[0] == 3:
+                self.position = (cpos[0], cpos[1], cpos[2])
+            elif np.shape(cpos)[0] == 4:
+                self.position = [cpos[0], cpos[1], cpos[2], cpos[3]]
+            else :
+                print("  ERROR: wrong definition of panel position")
+                sys.exit(1)
+                
         else:
             self.position = (parent.yx[0], parent.yx[1], idx+1)
 
+            
+        if 'order' in cnfg:
+            self.order = cnfg['order']
+        else:
+            self.order = None
+            
             
         if 'view' in cnfg:
             self.view = View(cnfg['view'], parent)
