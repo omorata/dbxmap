@@ -133,7 +133,7 @@ class Frame(object):
             self.pixrange = dsp.Pixrange(cnfg['pixrange'], self)
 
         if 'contours' in cnfg:
-            self.contour = dsp. Contour(cnfg['contours'], self)
+            self.contour = dsp.Contour(cnfg['contours'], self)
 
         if 'axes' in cnfg:
             self.axes = Axes(cnfg['axes'], self, fonts=self.fonts)
@@ -145,16 +145,20 @@ class Frame(object):
             
         self.wd = dirs['wkdir']
 
+        
         panel_str = [k for k in cnfg if 'panel' in k]
 
         if panel_str :
             panel_list = []
             p_idx = 0
-            
-            for panel in panel_str:
+
+            p_order = self.read_panel_order(panel_str, cnfg)
+
+            for ct, panel in enumerate(panel_str):
+                p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
+
                 print("    + adding panel:", panel, "...")
-                panel_list.append(Panel(cnfg[panel], panel, p_idx, self))
-                p_idx += 1
+                panel_list.append(Panel(cnfg[panel], panel, p_ord, self))
 
             self.panels = panel_list
         
@@ -174,6 +178,38 @@ class Frame(object):
 
 
 
+    @staticmethod
+    def read_panel_order(plist, cfg):
+        """look for order key in panels config and add value to order list"""
+        
+        order_list = []
+        
+        for pnl in plist:
+            if 'order' in cfg[pnl] :
+                order_list.append(cfg[pnl]['order'])
+            else:
+                order_list.append(None)
+
+        return order_list
+
+
+
+    @staticmethod
+    def set_panel_order(ord_id, i, idx):
+        """get the order id of the panel"""
+        
+        if ord_id[i] != None :
+            order = ord_id[i]
+        else:
+            while idx in ord_id:
+                idx += 1
+            order = idx
+            idx += 1
+
+        return order, idx
+
+    
+
     def add_panels(self, fig):
         """Add panels to the figure.
 
@@ -184,22 +220,6 @@ class Frame(object):
         p_idx = 0
         gc = []
 
-        # possibility of reordering panels (order)
-        taken = []
-        for p in self.panels:
-            if p.order != None :
-                taken.append(p.order)
-
-        idx = 0
-        for p in self.panels:
-            if np.shape(p.position)[0] == 3:
-                if p.order != None:
-                    p.position = (p.position[0], p.position[1], p.order+1)
-                else :
-                    if idx in taken :
-                        idx += 1
-                    p.position = (p.position[0], p.position[1], idx+1)
-                    idx += 1
 
         if self.pad :
             fig.subplots_adjust(wspace=self.pad[0], hspace=self.pad[1])
