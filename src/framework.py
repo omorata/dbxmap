@@ -153,6 +153,7 @@ class Frame(object):
             p_idx = 0
 
             p_order = self.read_panel_order(panel_str, cnfg)
+            self.npanels = len(p_order)
 
             for ct, panel in enumerate(panel_str):
                 p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
@@ -275,11 +276,14 @@ class Panel(object) :
             self.view = View(None, parent)
 
         if 'axes' in cnfg:
-            self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts)
+            self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
         elif hasattr(parent, 'axes'):
-            self.axes = Axes(None, parent, fonts=self.fonts)
+            self.axes = Axes(None, parent, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
         else:
-            self.axes = Axes(None, None, fonts=self.fonts)
+            self.axes = Axes(None, None, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
             
         if 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
@@ -400,7 +404,8 @@ class Panel(object) :
                 mk.add_markers(gc[idx])
 
         if hasattr(self, 'colorbar'):
-            self.colorbar.set_colorbar(gc[idx])
+            if self.colorbar != None :
+                self.colorbar.set_colorbar(gc[idx])
 
             
 
@@ -520,8 +525,13 @@ class View(object) :
 class Axes(object):
     """Class that contains the definition of the plot axes."""
     
-    def __init__(self, cfg, parent, fonts=None):
+    def __init__(self, cfg, parent, fonts=None, p_id=-1, tc=(1,1)):
 
+        
+        if p_id > -1 :
+            self.set_axes_in_grid(p_id, tc, parent)
+
+            
         if cfg != None and 'axes_labels' in cfg:
             if hasattr(parent, 'axes'):
                 self.read_axes_labels(cfg['axes_labels'], parent.axes,
@@ -645,6 +655,19 @@ class Axes(object):
                          'weight']:
                 if prop in ff :
                     self.ticklabel_font[prop] = ff[prop]
+
+
+
+    def set_axes_in_grid(self, pid, t, parent):
+        """Hides axis in grid when no padding"""
+        
+        if (pid % t[1]) != 0 and parent.pad[0] < 0.16:
+            self.axis_yhide = True
+            self.ticklabel_yhide = True 
+
+        if (t[0] - pid) > t[1] and parent.pad[1] < 0.12:
+            self.axis_xhide = True
+            self.ticklabel_xhide = True
 
 
 
