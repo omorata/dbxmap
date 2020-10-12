@@ -135,7 +135,7 @@ class Dataset(object) :
         TODO:
             proper unit treatment
         """
-        
+
         if 'bmaj' in battr :
             bmaj = fw.View.read_units(battr['bmaj'])
             self.beam_shape = {'major' : bmaj}

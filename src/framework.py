@@ -96,6 +96,7 @@ class Frame(object):
     def __init__(self, cnfg, dirs):
 
         self.wkdir = dirs['wkdir']
+        self.calc = None
 
         if 'font' in cnfg:
             self.fonts = self.read_font(cnfg['font'])
@@ -107,6 +108,16 @@ class Frame(object):
         else:
             self.yx = [1,1]
 
+        if 'pad' in cnfg:
+            self.pad = cnfg['pad']
+        else :
+            self.pad = None
+
+        if 'margins' in cnfg:
+            self.margins = cnfg['margins']
+        else :
+            self.margins = None
+            
         if 'view' in cnfg:
             self.view = View(cnfg['view'], self)
 
@@ -122,7 +133,7 @@ class Frame(object):
             self.pixrange = dsp.Pixrange(cnfg['pixrange'], self)
 
         if 'contours' in cnfg:
-            self.contour = dsp. Contour(cnfg['contours'], self)
+            self.contour = dsp.Contour(cnfg['contours'], self)
 
         if 'axes' in cnfg:
             self.axes = Axes(cnfg['axes'], self, fonts=self.fonts)
@@ -134,16 +145,21 @@ class Frame(object):
             
         self.wd = dirs['wkdir']
 
+        
         panel_str = [k for k in cnfg if 'panel' in k]
 
         if panel_str :
             panel_list = []
             p_idx = 0
-            
-            for panel in panel_str:
+
+            p_order = self.read_panel_order(panel_str, cnfg)
+            self.npanels = len(p_order)
+
+            for ct, panel in enumerate(panel_str):
+                p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
+
                 print("    + adding panel:", panel, "...")
-                panel_list.append(Panel(cnfg[panel], panel, p_idx, self))
-                p_idx += 1
+                panel_list.append(Panel(cnfg[panel], panel, p_ord, self))
 
             self.panels = panel_list
         
@@ -163,6 +179,38 @@ class Frame(object):
 
 
 
+    @staticmethod
+    def read_panel_order(plist, cfg):
+        """look for order key in panels config and add value to order list"""
+        
+        order_list = []
+        
+        for pnl in plist:
+            if 'order' in cfg[pnl] :
+                order_list.append(cfg[pnl]['order'])
+            else:
+                order_list.append(None)
+
+        return order_list
+
+
+
+    @staticmethod
+    def set_panel_order(ord_id, i, idx):
+        """get the order id of the panel"""
+        
+        if ord_id[i] != None :
+            order = ord_id[i]
+        else:
+            while idx in ord_id:
+                idx += 1
+            order = idx
+            idx += 1
+
+        return order, idx
+
+    
+
     def add_panels(self, fig):
         """Add panels to the figure.
 
@@ -172,12 +220,19 @@ class Frame(object):
 
         p_idx = 0
         gc = []
-        
+
+
+        if self.pad :
+            fig.subplots_adjust(wspace=self.pad[0], hspace=self.pad[1])
+
+        if self.margins:
+            fig.subplots_adjust(left=self.margins[0], right=self.margins[1],
+                                bottom=self.margins[2], top=self.margins[3])
+
         for p in self.panels :
             print("    + plotting panel:", p.name, "...")
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
-
 
             
             
@@ -197,10 +252,23 @@ class Panel(object) :
 
         if 'position' in cnfg:
             cpos = cnfg['position']
-            self.position = (cpos[0], cpos[1], cpos[2])
+            if np.shape(cpos)[0] == 3:
+                self.position = (cpos[0], cpos[1], cpos[2])
+            elif np.shape(cpos)[0] == 4:
+                self.position = [cpos[0], cpos[1], cpos[2], cpos[3]]
+            else :
+                print("  ERROR: wrong definition of panel position")
+                sys.exit(1)
+                
         else:
             self.position = (parent.yx[0], parent.yx[1], idx+1)
 
+            
+        if 'order' in cnfg:
+            self.order = cnfg['order']
+        else:
+            self.order = None
+            
             
         if 'view' in cnfg:
             self.view = View(cnfg['view'], parent)
@@ -208,11 +276,14 @@ class Panel(object) :
             self.view = View(None, parent)
 
         if 'axes' in cnfg:
-            self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts)
+            self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
         elif hasattr(parent, 'axes'):
-            self.axes = Axes(None, parent, fonts=self.fonts)
+            self.axes = Axes(None, parent, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
         else:
-            self.axes = Axes(None, None, fonts=self.fonts)
+            self.axes = Axes(None, None, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
             
         if 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
@@ -333,7 +404,8 @@ class Panel(object) :
                 mk.add_markers(gc[idx])
 
         if hasattr(self, 'colorbar'):
-            self.colorbar.set_colorbar(gc[idx])
+            if self.colorbar != None :
+                self.colorbar.set_colorbar(gc[idx])
 
             
 
@@ -453,8 +525,13 @@ class View(object) :
 class Axes(object):
     """Class that contains the definition of the plot axes."""
     
-    def __init__(self, cfg, parent, fonts=None):
+    def __init__(self, cfg, parent, fonts=None, p_id=-1, tc=(1,1)):
 
+        
+        if p_id > -1 :
+            self.set_axes_in_grid(p_id, tc, parent)
+
+            
         if cfg != None and 'axes_labels' in cfg:
             if hasattr(parent, 'axes'):
                 self.read_axes_labels(cfg['axes_labels'], parent.axes,
@@ -578,6 +655,19 @@ class Axes(object):
                          'weight']:
                 if prop in ff :
                     self.ticklabel_font[prop] = ff[prop]
+
+
+
+    def set_axes_in_grid(self, pid, t, parent):
+        """Hides axis in grid when no padding"""
+        
+        if (pid % t[1]) != 0 and parent.pad[0] < 0.16:
+            self.axis_yhide = True
+            self.ticklabel_yhide = True 
+
+        if (t[0] - pid) > t[1] and parent.pad[1] < 0.12:
+            self.axis_xhide = True
+            self.ticklabel_xhide = True
 
 
 
