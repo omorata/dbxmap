@@ -157,56 +157,16 @@ class Frame(object):
 
         if data_str : 
             self.datasets = {}
-            for g in data_str:
-                if 'panels' in cnfg[g]:
-                    p = cnfg[g]['panels']
-                    lst_pan = []
-                    for it in p:
-                        sit = str(it).split("-")
-                        if len(sit) == 1:
-                            lst_pan.append(int(sit[0]))
+            self.load_generic_datasets(data_str, cnfg)
 
-                        elif len(sit) == 2:
-                            b = list( range(int(sit[0]),int(sit[1])+1) )
-                            lst_pan.extend(b)
-
-                        else:
-                            print("ERROR: wrong format in dataset panels",
-                                  "definition")
-                            sys.exit(1)
-
-                else:
-                    b = list( range(0, self.gridsize) )
-                    lst_pan = b
-
-                ex = list(set(lst_pan))
-                for xx in ex:
-                    ds_str = g+'__'+str(xx)
-            
-                    self.datasets[ds_str] = { k: cnfg[g][k] for k in
-                                              cnfg[g].keys() - {'panels'} } 
-
-                    self.gridpanels[xx]['data'] = self.add_to_list(
-                        self.gridpanels[xx]['data'], ds_str)
-
-            
 
         panel_str = [k for k in cnfg if 'panel' in k]
 
         if panel_str :
-            panel_list = []
-            p_idx = 0
-
-            p_order = self.read_panel_order(panel_str, cnfg)
-            self.npanels = len(p_order)
-
-            for ct, panel in enumerate(panel_str):
-                p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
-
-                if p_ord in self.gridpanels:
-                    self.gridpanels[p_ord]['pstr'] = panel
+            self.load_panels(panel_str,cnfg)
 
 
+        panel_list = []
 
         for pnl in range(self.gridsize):
 
@@ -217,12 +177,90 @@ class Frame(object):
 
             elif self.gridpanels[pnl]['data']:
                 print("    + adding panel:", pnl, "...")
-                panel_list.append(Panel(None, None, pnl, self))
+                panel_list.append(Panel(None, 'panel_'+'g'+str(pnl), pnl, self))
 
 
         self.panels = panel_list
         
                 
+
+    def load_generic_datasets(self, d_str, cfg):
+        """Reads the values of a generic dataset"""
+        
+        for g in d_str:
+
+            if 'panels' in cfg[g]:
+                p = cfg[g]['panels']
+
+                lst_pan = []
+                for it in p:
+                    sit = str(it).split("-")
+                    if len(sit) == 1:
+                        pn = int(sit[0])
+
+                        if pn > self.gridsize-1:
+                            print("ERROR: dataset panels definition",
+                                  "is out of bounds")
+                            sys.exit(1)
+                                
+                        lst_pan.append(pn)
+
+                    elif len(sit) == 2:
+                        if not sit[0]:
+                            print("ERROR: wrong dataset panels definition")
+                            sys.exit(1)
+                                
+                        ini_rg = int(sit[0])
+                        end_rg = int(sit[1])
+                        if ini_rg > end_rg:
+                            swap = ini_rg
+                            ini_rg = end_rg
+                            end_rg = swap
+
+                        if end_rg > self.gridsize-1:
+                            end_rg = self.gridsize - 1
+                            
+                        b = list( range(ini_rg, end_rg+1) )
+                            
+                        lst_pan.extend(b)
+
+                    else:
+                        print("ERROR: wrong format in dataset panels",
+                              "definition")
+                        sys.exit(1)
+                    
+                panel_set = list(set(lst_pan))
+
+            else:
+                panel_set = list( range(0, self.gridsize) )
+
+
+            for panel in panel_set:
+                ds_str = g+'__'+str(panel)
+            
+                self.datasets[ds_str] = { k: cfg[g][k] for k in
+                                          cfg[g].keys() - {'panels'} } 
+
+                self.gridpanels[panel]['data'] = self.add_to_list(
+                    self.gridpanels[panel]['data'], ds_str)
+
+
+
+    def load_panels(self, p_str, cfg):
+        """Load panels definition"""
+        
+        p_idx = 0
+
+        p_order = self.read_panel_order(p_str, cfg)
+        self.npanels = len(p_order)
+
+        for ct, panel in enumerate(p_str):
+            p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
+
+            if p_ord in self.gridpanels:
+                self.gridpanels[p_ord]['pstr'] = panel
+
+
 
     @staticmethod
     def add_to_list(plist, new):
@@ -244,15 +282,18 @@ class Frame(object):
 
 
 
-    @staticmethod
-    def read_panel_order(plist, cfg):
+    def read_panel_order(self, plist, cfg):
         """look for order key in panels config and add value to order list"""
         
         order_list = []
         
         for pnl in plist:
             if 'order' in cfg[pnl] :
-                order_list.append(cfg[pnl]['order'])
+                ord_val = cfg[pnl]['order']
+                if ord_val < 0 or ord_val > self.gridsize-1:
+                    print("ERROR: wrong panel order value")
+                    sys.exit(1)
+                order_list.append(ord_val)
             else:
                 order_list.append(None)
 
@@ -374,18 +415,24 @@ class Panel(object) :
             
         dataset_list = []
 
-        dataset_str = [k for k in cnfg if 'dataset' in k]
-
-        if dataset_str :
-            for d in dataset_str:
-                dataset_list.append(dsp.Dataset(cnfg[d], d, parent))
+        plist = parent.gridpanels[idx]['data']
+        if plist:
+            for d in plist:
+                dataset_list.append(dsp.Dataset(parent.datasets[d], d, parent))
                 
-            self.datasets = dataset_list
-        else:
-            self.datasets = []
+
+        if cnfg != None:
+            dataset_str = [k for k in cnfg if 'dataset' in k]
+
+            if dataset_str :
+                for d in dataset_str:
+                    dataset_list.append(dsp.Dataset(cnfg[d], d, parent))
+
+                
+        self.datasets = dataset_list
 
 
-            
+
     @staticmethod
     def read_font(ff, parent):
 
@@ -433,11 +480,11 @@ class Panel(object) :
                     vw.center = (ra, dec)
                 else :
                     hdu = d.filename
-                    
-                gc.append(aplpy.FITSFigure(hdu,
-                                           figure=fig,
+
+                gc.append(aplpy.FITSFigure(hdu, figure=fig,
                                            subplot=self.position,
                                            dimensions=d.dims))
+
                 vw.set_view(gc[idx])
 
             d.show(gc[idx], coords=vw.coords, ref=refpos)
