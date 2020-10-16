@@ -24,9 +24,8 @@ import markers as mrk
 
 from astropy.io import fits
 from astropy import wcs
-from offset import linear_offset_coords
+#from offset import linear_offset_coords
 
-import re
 
 class Figure(object):
     """Define object Figure."""
@@ -393,7 +392,7 @@ class Panel(object) :
             
         if cnfg != None and 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
-        elif hasattr(parent, 'markers'):
+        elif hasattr(parent, 'labels'):
             self.labels = mrk.Label(None, parent, fonts=self.fonts)
         else:
             self.labels = None
@@ -892,6 +891,4 @@ class Axes(object):
             if self.ticklabel_yhide:
                 gp.hide_y()
 
-            
-
-
+        
