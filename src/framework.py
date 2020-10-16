@@ -111,7 +111,7 @@ class Frame(object):
         self.gridsize = self.yx[0] * self.yx[1]
         self.gridpanels = {}
         for gr in range(self.gridsize) :
-            nwstr = {'pstr' :  [] , 'data' : [] }
+            nwstr = {'pstr' :  '' , 'data' : [] }
             self.gridpanels[gr] = nwstr
 
             
@@ -169,8 +169,11 @@ class Frame(object):
                         elif len(sit) == 2:
                             b = list( range(int(sit[0]),int(sit[1])+1) )
                             lst_pan.extend(b)
-                        #else:
-                        #     ERROR
+
+                        else:
+                            print("ERROR: wrong format in dataset panels",
+                                  "definition")
+                            sys.exit(1)
 
                 else:
                     b = list( range(0, self.gridsize) )
@@ -201,32 +204,24 @@ class Frame(object):
                 p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
 
                 if p_ord in self.gridpanels:
-                    self.gridpanels[p_ord]['pstr'] = self.add_to_list(
-                        self.gridpanels[p_ord]['pstr'], panel)
+                    self.gridpanels[p_ord]['pstr'] = panel
 
 
-                #print(self.gridpanels[p_idx].keys(),
-                #      self.gridpanels[p_idx].values())
-                        
-                print("    + adding panel:", panel, "...")
-                panel_list.append(Panel(cnfg[panel], panel, p_ord, self))
-
-            self.panels = panel_list
-        
-        else:
-            self.panels = []
-
-        print(self.gridpanels)
 
         for pnl in range(self.gridsize):
-            print(" ..", pnl)
-            if self.gridpanels[pnl]['pstr']:
-                print( " ==> hi ha explicit")
-            if self.gridpanels[pnl]['data']:
-                print(" ==> hi ha implicit")
 
-            # here we call Panel, not above
-            
+            if self.gridpanels[pnl]['pstr']:
+                print("    + adding panel:", pnl, "...")
+                panel = self.gridpanels[pnl]['pstr']
+                panel_list.append(Panel(cnfg[panel], panel, pnl, self))
+
+            elif self.gridpanels[pnl]['data']:
+                print("    + adding panel:", pnl, "...")
+                panel_list.append(Panel(None, None, pnl, self))
+
+
+        self.panels = panel_list
+        
                 
 
     @staticmethod
@@ -313,14 +308,14 @@ class Panel(object) :
 
         self.name = name
 
-        if 'font' in cnfg:
+        if cnfg != None and 'font' in cnfg:
             self.fonts = self.read_font(cnfg['font'], parent)
         elif hasattr(parent, 'fonts'):
             self.fonts = self.read_font(None, parent)
         else:
             self.fonts = None
 
-        if 'position' in cnfg:
+        if cnfg != None and 'position' in cnfg:
             cpos = cnfg['position']
             if np.shape(cpos)[0] == 3:
                 self.position = (cpos[0], cpos[1], cpos[2])
@@ -334,18 +329,18 @@ class Panel(object) :
             self.position = (parent.yx[0], parent.yx[1], idx+1)
 
             
-        if 'order' in cnfg:
+        if cnfg != None and 'order' in cnfg:
             self.order = cnfg['order']
         else:
             self.order = None
             
             
-        if 'view' in cnfg:
+        if cnfg != None and 'view' in cnfg:
             self.view = View(cnfg['view'], parent)
         elif hasattr(parent, 'view'):
             self.view = View(None, parent)
 
-        if 'axes' in cnfg:
+        if cnfg != None and 'axes' in cnfg:
             self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts, p_id=idx,
                              tc=(parent.npanels, parent.yx[1]))
         elif hasattr(parent, 'axes'):
@@ -355,21 +350,21 @@ class Panel(object) :
             self.axes = Axes(None, None, fonts=self.fonts, p_id=idx,
                              tc=(parent.npanels, parent.yx[1]))
             
-        if 'labels' in cnfg:
+        if cnfg != None and 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
         elif hasattr(parent, 'markers'):
             self.labels = mrk.Label(None, parent, fonts=self.fonts)
         else:
             self.labels = None
 
-        if 'markers' in cnfg:
+        if cnfg != None and 'markers' in cnfg:
             self.markers = mrk.Marker(cnfg['markers'], parent, fonts=self.fonts)
         elif hasattr(parent, 'markers'):
             self.markers = mrk.Marker(None, parent, fonts=self.fonts)
         else:
             self.markers = None
 
-        if 'colorbar' in cnfg:
+        if cnfg != None and 'colorbar' in cnfg:
             self.colorbar = dsp.Colorbar(cnfg['colorbar'], parent,
                                          fonts=self.fonts)
         elif hasattr(parent, 'colorbar'):
