@@ -26,7 +26,7 @@ from astropy.io import fits
 from astropy import wcs
 from offset import linear_offset_coords
 
-
+import re
 
 class Figure(object):
     """Define object Figure."""
@@ -108,6 +108,13 @@ class Frame(object):
         else:
             self.yx = [1,1]
 
+        self.gridsize = self.yx[0] * self.yx[1]
+        self.gridpanels = {}
+        for gr in range(self.gridsize) :
+            nwstr = {'pstr' :  [] , 'data' : [] }
+            self.gridpanels[gr] = nwstr
+
+            
         if 'pad' in cnfg:
             self.pad = cnfg['pad']
         else :
@@ -145,7 +152,42 @@ class Frame(object):
             
         self.wd = dirs['wkdir']
 
-        
+
+        data_str = [ d for d in cnfg if 'dataset' in d]
+
+        if data_str : 
+            self.datasets = {}
+            for g in data_str:
+                if 'panels' in cnfg[g]:
+                    p = cnfg[g]['panels']
+                    lst_pan = []
+                    for it in p:
+                        sit = str(it).split("-")
+                        if len(sit) == 1:
+                            lst_pan.append(int(sit[0]))
+
+                        elif len(sit) == 2:
+                            b = list( range(int(sit[0]),int(sit[1])+1) )
+                            lst_pan.extend(b)
+                        #else:
+                        #     ERROR
+
+                else:
+                    b = list( range(0, self.gridsize) )
+                    lst_pan = b
+
+                ex = list(set(lst_pan))
+                for xx in ex:
+                    ds_str = g+'__'+str(xx)
+            
+                    self.datasets[ds_str] = { k: cnfg[g][k] for k in
+                                              cnfg[g].keys() - {'panels'} } 
+
+                    self.gridpanels[xx]['data'] = self.add_to_list(
+                        self.gridpanels[xx]['data'], ds_str)
+
+            
+
         panel_str = [k for k in cnfg if 'panel' in k]
 
         if panel_str :
@@ -158,6 +200,14 @@ class Frame(object):
             for ct, panel in enumerate(panel_str):
                 p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
 
+                if p_ord in self.gridpanels:
+                    self.gridpanels[p_ord]['pstr'] = self.add_to_list(
+                        self.gridpanels[p_ord]['pstr'], panel)
+
+
+                #print(self.gridpanels[p_idx].keys(),
+                #      self.gridpanels[p_idx].values())
+                        
                 print("    + adding panel:", panel, "...")
                 panel_list.append(Panel(cnfg[panel], panel, p_ord, self))
 
@@ -166,7 +216,27 @@ class Frame(object):
         else:
             self.panels = []
 
+        print(self.gridpanels)
 
+        for pnl in range(self.gridsize):
+            print(" ..", pnl)
+            if self.gridpanels[pnl]['pstr']:
+                print( " ==> hi ha explicit")
+            if self.gridpanels[pnl]['data']:
+                print(" ==> hi ha implicit")
+
+            # here we call Panel, not above
+            
+                
+
+    @staticmethod
+    def add_to_list(plist, new):
+
+        nstr = plist
+        nstr.append(new)
+        return nstr
+
+    
 
     @staticmethod
     def read_font(ff):
