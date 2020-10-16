@@ -33,8 +33,8 @@ class Figure(object):
     
     def __init__(self, cnfg, dirs):
 
-        if 'page' in cnfg :
-            fig_cfg= cnfg['page']
+        if 'figure' in cnfg :
+            fig_cfg= cnfg['figure']
             
             if 'outfile' in fig_cfg:
                 self.outfile = os.path.join(dirs['outdir'], fig_cfg['outfile'])
@@ -56,8 +56,8 @@ class Figure(object):
             else :
                 self.name = "NO_NAME"
 
-        if 'panels' in cnfg:
-            self.frame = Frame(cnfg['panels'], dirs)
+        if 'frame' in cnfg:
+            self.frame = Frame(cnfg['frame'], dirs)
         else:
             print("ERROR: no Frame definition")
             sys.exit(1)
