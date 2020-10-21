@@ -24,7 +24,7 @@ import markers as mrk
 
 from astropy.io import fits
 from astropy import wcs
-#from offset import linear_offset_coords
+
 
 
 class Figure(object):
@@ -198,8 +198,8 @@ class Frame(object):
                         pn = int(sit[0])
 
                         if pn > self.gridsize-1:
-                            print("ERROR: dataset panels definition",
-                                  "is out of bounds")
+                            print("ERROR: dataset panels definition is out of",
+                                  "bounds")
                             sys.exit(1)
                                 
                         lst_pan.append(pn)
@@ -472,6 +472,7 @@ class Panel(object) :
                 #  below has to be separated
                 if vw.center == None:
                     vw.center = d.get_reference()
+                    #vw.center = d.center
 
                 refpos = vw.center
                 if vw.coords == 'off' :
@@ -480,11 +481,19 @@ class Panel(object) :
                 else :
                     hdu = d.filename
 
+
+                if d.slices :
+                    hdu = d.get_slice(hdu=hdu)
+
+                # hdu ==> d.hdu after doing all conversions
+
                 gc.append(aplpy.FITSFigure(hdu, figure=fig,
                                            subplot=self.position,
                                            dimensions=d.dims))
+                
 
                 vw.set_view(gc[idx])
+
 
             d.show(gc[idx], coords=vw.coords, ref=refpos)
 

@@ -65,7 +65,14 @@ class Dataset(object) :
                     self.contour = Contour(None, parent, name=self.name)
                 else :
                     raise Exception('Error: contour is not defined anywhere')
+
                 
+        if 'slices' in cnfg:
+            self.slices = cnfg['slices']
+        else:
+            self.slices = None
+            
+            
         if 'beam' in cnfg:
             self.read_beam_parameters(dict(cnfg['beam']))
 
@@ -116,7 +123,7 @@ class Dataset(object) :
         ra, dec = new.lon.arcsec, new.lat.arcsec
                     
         w.wcs.crval = ra, dec
-        w.wcs.ctype = 'XOFFSET', 'YOFFSET'
+        w.wcs.ctype = 'RA -- XOFFSET', 'DEC -- YOFFSET'
         w.wcs.cunit = 'arcsec', 'arcsec'
         w.wcs.cdelt = wcs.utils.proj_plane_pixel_scales(w)*3600
 
@@ -228,12 +235,46 @@ class Dataset(object) :
             hdu, ra, dec = self.to_offsets(ref)
         else :
             hdu = self.filename
+            
+        if self.slices :
+            hdu = self.get_slice(hdu=hdu)
 
         g.show_contour(data=hdu,levels=self.contour.levels,
                        colors=self.contour.colors,
                        linewidths=self.contour.linewidth,
                        linestyles=self.contour.linestyle)
+
+
+
+
+    def get_slice(self, hdu):
+        """gets a slice out of a data cube"""
+
+        hh = fits.open(hdu)[0]
+        w = wcs.WCS(hh.header)
+
+        save_type = []
+        naxis = w.naxis
+        ssl = self.slices
+                
+        for dx in range(naxis):
+            rev_idx = naxis - dx - 1
+            if dx in self.dims:
+                save_type.append(w.wcs.ctype[dx])
+
+            else:
+                hh.data = hh.data.take(indices=ssl.pop(0), axis=rev_idx)
+
+        ct = 0
+        for dx in range(naxis):
+            if not w.wcs.ctype[ct] in save_type:
+                w = w.dropaxis(ct)
+            else:
+                ct += 1
+
+        hh.header = w.to_header()
         
+        return hh
 
 
         

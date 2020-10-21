@@ -385,9 +385,9 @@ class Label(object):
             if file_str :
                 for lab in file_str:
                     self.label_list.append(Label(cfg[lab], self))
-        else :
-            print("\n  +++ WARNING: naked 'label' field in the configuration",
-                  "file +++\n")
+        #else :
+        #    print("\n  +++ WARNING: naked 'label' field in the configuration",
+        #          "file +++\n")
 
 
 
