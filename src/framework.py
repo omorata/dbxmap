@@ -233,12 +233,56 @@ class Frame(object):
             else:
                 panel_set = list( range(0, self.gridsize) )
 
+            if 'slices' in cfg[g]:
+                slc = cfg[g]['slices']
+                
+                sequences = {}
 
-            for panel in panel_set:
+                for ix, sl in enumerate(slc):
+                    rglist = []
+                    
+                    tp = tuple(sl)
+
+                    for it in tp:
+
+                        slrg = str(it).split("-")
+
+                        if len(slrg) == 1 :
+                            rglist.append(int(slrg[0]))
+
+                        elif len(slrg) == 2:
+                            if not slrg[0]:
+                                print("ERROR: wrong dataset slices definition")
+                                sys.exit(1)
+                                
+                            ini_sl = int(slrg[0])
+                            end_sl = int(slrg[1])
+                            if ini_sl > end_sl:
+                                swap = ini_sl
+                                ini_sl = end_sl
+                                end_sl = swap
+
+                            rglist.extend(list(range(ini_sl, end_sl+1)))
+
+                        else:
+                            print("ERROR: wrong format in dataset slices",
+                                  "definition")
+
+                    while len(rglist) < len(panel_set):
+                        rglist.append(rglist[-1])
+
+                    sequences[ix] = rglist
+                        
+                    
+            arr_slc = np.transpose(np.array([sequences[0], sequences[1]]))
+
+            for ct, panel in enumerate(panel_set):
                 ds_str = g+'__'+str(panel)
             
                 self.datasets[ds_str] = { k: cfg[g][k] for k in
-                                          cfg[g].keys() - {'panels'} } 
+                                          cfg[g].keys() - {'panels'} -
+                                          {'slices'}}
+                self.datasets[ds_str]['slices'] = list(arr_slc[ct])
 
                 self.gridpanels[panel]['data'] = self.add_to_list(
                     self.gridpanels[panel]['data'], ds_str)
@@ -493,7 +537,6 @@ class Panel(object) :
                 
 
                 vw.set_view(gc[idx])
-
 
             d.show(gc[idx], coords=vw.coords, ref=refpos)
 

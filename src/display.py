@@ -22,6 +22,7 @@ from astropy.coordinates import SkyCoord
 
 import markers as mrk
 import framework as fw
+import copy
 
 class Dataset(object) :
     """Create a dataset object."""
@@ -71,7 +72,6 @@ class Dataset(object) :
             self.slices = cnfg['slices']
         else:
             self.slices = None
-            
             
         if 'beam' in cnfg:
             self.read_beam_parameters(dict(cnfg['beam']))
@@ -235,10 +235,11 @@ class Dataset(object) :
             hdu, ra, dec = self.to_offsets(ref)
         else :
             hdu = self.filename
-            
+
         if self.slices :
             hdu = self.get_slice(hdu=hdu)
 
+        
         g.show_contour(data=hdu,levels=self.contour.levels,
                        colors=self.contour.colors,
                        linewidths=self.contour.linewidth,
@@ -255,7 +256,7 @@ class Dataset(object) :
 
         save_type = []
         naxis = w.naxis
-        ssl = self.slices
+        ssl = copy.deepcopy(self.slices)
                 
         for dx in range(naxis):
             rev_idx = naxis - dx - 1
