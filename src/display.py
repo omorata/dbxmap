@@ -76,6 +76,43 @@ class Dataset(object) :
         if 'beam' in cnfg:
             self.read_beam_parameters(dict(cnfg['beam']))
 
+        if 'chanlbl' in cnfg:
+            self.lblchan = {}
+
+            chlb = cnfg['chanlbl']
+
+            if 'axis' in chlb:
+                self.lblchan['axis'] = chlb['axis']
+            else:
+                self.lblchan['axis'] = 2
+
+            if 'type' in chlb:
+                self.lblchan['type'] = chlb['type']
+            else:
+                self.lblchan['type'] = 'units'
+
+            if 'fct' in chlb:
+                self.lblchan['fct'] = chlb['fct']
+            else:
+                self.lblchan['fct'] = 1.
+
+            if 'fmt' in chlb:
+                self.lblchan['fmt'] = chlb['fmt']
+            else:
+                if self.lblchan['type'] == 'units':
+                    self.lblchan['fmt'] = '.2f'
+                elif self.lblchan['type'] == 'chan' :
+                    self.lblchan['fmt'] = 'd'
+
+
+            if 'ds_label' in chlb:
+                cfg_label = copy.deepcopy(chlb['ds_label'])
+
+                self.ds_label = mrk.Label(cfg_label, parent, fonts=None)
+
+        else:
+            self.lblchan = None
+
 
             
     def get_range_from_scale(self):
@@ -273,14 +310,19 @@ class Dataset(object) :
         save_type = []
         naxis = w.naxis
         ssl = copy.deepcopy(self.slices)
-                
+
+            
         for dx in range(naxis):
             rev_idx = naxis - dx - 1
             if dx in self.dims:
                 save_type.append(w.wcs.ctype[dx])
 
             else:
-                hh.data = hh.data.take(indices=ssl.pop(0), axis=rev_idx)
+                index = ssl.pop(0)
+                if self.lblchan :
+                    self.build_channel_label(dx, index, w)
+                    
+                hh.data = hh.data.take(indices=index, axis=rev_idx)
 
         ct = 0
         for dx in range(naxis):
@@ -294,10 +336,32 @@ class Dataset(object) :
         return hh
 
 
+
+    def build_channel_label(self, ids, ichan, w) :
+        """Builds the label to show the channel number or units"""
+        
+        if ids == self.lblchan['axis'] :
+            unit_fmt = '{0:'+self.lblchan['fmt']+'}'
+            self.chan = ichan + 1
+
+            if self.lblchan['type'] == 'units':
+                self.unit =((self.chan - w.wcs.crpix[ids]) * w.wcs.cdelt[ids] +
+                            w.wcs.crval[ids]) * self.lblchan['fct']
+                
+                self.lbltxt = unit_fmt.format(self.unit)
+                        
+            elif self.lblchan['type'] == 'chan':
+                self.lbltxt = unit_fmt.format(self.chan)
+
+            self.ds_label.label_props['text'] = self.lbltxt
+
+
+            
         
 class Pixrange(object):
     """ create a pixrange
     """
+
     def __init__(self, cnfg, parent):
 
         if cnfg != None and 'base' in cnfg:

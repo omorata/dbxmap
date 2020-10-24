@@ -540,6 +540,16 @@ class Panel(object) :
 
             d.show(gc[idx], coords=vw.coords, ref=refpos)
 
+
+            # adds channel label
+            try:
+                if d.lblchan:
+                    #d.ds_label.label_props['text'] = d.lbltxt
+                    self.labels.label_list.append(d.ds_label)
+                    
+            except AttributeError:
+                pass
+            
             cid += 1
 
             try:
