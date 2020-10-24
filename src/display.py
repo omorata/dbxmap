@@ -220,11 +220,19 @@ class Dataset(object) :
     def show_colorscale(self, g) :
         """Show a colorscale of the dataset."""
             
+        pixrg_args = {}
+        if self.pixrange.smooth:
+            pixrg_args['smooth'] = self.pixrange.smooth
+
+        if self.pixrange.kernel:
+            pixrg_args['kernel'] = self.pixrange.kernel
+
+            
         g.show_colorscale(vmin=self.pixrange.range[0],
                           vmax=self.pixrange.range[1],
                           stretch=self.pixrange.stretch,
                           cmap=self.pixrange.colormap,
-                          aspect='equal')
+                          aspect='equal', **pixrg_args)
 
 
         
@@ -239,11 +247,19 @@ class Dataset(object) :
         if self.slices :
             hdu = self.get_slice(hdu=hdu)
 
+        cntr_args = {}
+        if self.contour.smooth:
+            cntr_args['smooth'] = self.contour.smooth
+
+        if self.contour.kernel:
+            cntr_args['kernel'] = self.contour.kernel
+
         
         g.show_contour(data=hdu,levels=self.contour.levels,
                        colors=self.contour.colors,
                        linewidths=self.contour.linewidth,
-                       linestyles=self.contour.linestyle)
+                       linestyles=self.contour.linestyle,
+                       **cntr_args)
 
 
 
@@ -349,6 +365,26 @@ class Pixrange(object):
                 self.stretch = parent.pixrange.stretch
             except AttributeError:
                 pass
+
+
+        if cnfg != None and 'smooth' in cnfg:
+            self.smooth = cnfg['smooth']
+        else:
+            try:
+                self.smooth = parent.pixrange.smooth
+
+            except AttributeError:
+                self.smooth = None
+
+
+        if cnfg != None and 'kernel' in cnfg:
+            self.kernel = cnfg['kernel']
+        else:
+            try:
+                self.kernel = parent.pixrange.kernel
+                
+            except AttributeError:
+                self.kernel = None
 
             
 
@@ -457,6 +493,26 @@ class Contour(object):
                 self.linestyle = '-'
 
 
+        if cnfg != None and 'smooth' in cnfg:
+            self.smooth = cnfg['smooth']
+        else:
+            try:
+                self.smooth = parent.contour.smooth
+
+            except AttributeError:
+                self.smooth = None
+
+
+        if cnfg != None and 'kernel' in cnfg:
+            self.kernel = cnfg['kernel']
+        else:
+            try:
+                self.kernel = parent.contour.kernel
+                
+            except AttributeError:
+                self.kernel = None
+
+            
         if name:
             if not hasattr(self, 'levels'):
                 try :
@@ -466,12 +522,14 @@ class Contour(object):
                              name)
                     sys.exit("Exiting")
 
+
                     
     @staticmethod
     def scale_values(factor, vlist):
         """Scales the values in vlist by factor."""
 
         return [(float(i) * factor) for i in vlist]
+
 
         
     def add_levels(self, new_levels) :
@@ -490,6 +548,7 @@ class Contour(object):
             prev.extend(new_levels)
             prev.sort()
             self.levels = prev
+
 
 
     def generate_levels(self, lev_list):
