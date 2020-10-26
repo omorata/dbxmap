@@ -22,6 +22,7 @@ from astropy.coordinates import SkyCoord
 
 import markers as mrk
 import framework as fw
+import copy
 
 class Dataset(object) :
     """Create a dataset object."""
@@ -65,9 +66,52 @@ class Dataset(object) :
                     self.contour = Contour(None, parent, name=self.name)
                 else :
                     raise Exception('Error: contour is not defined anywhere')
+
                 
+        if 'slices' in cnfg:
+            self.slices = cnfg['slices']
+        else:
+            self.slices = None
+            
         if 'beam' in cnfg:
             self.read_beam_parameters(dict(cnfg['beam']))
+
+        if 'chanlbl' in cnfg:
+            self.lblchan = {}
+
+            chlb = cnfg['chanlbl']
+
+            if 'axis' in chlb:
+                self.lblchan['axis'] = chlb['axis']
+            else:
+                self.lblchan['axis'] = 2
+
+            if 'type' in chlb:
+                self.lblchan['type'] = chlb['type']
+            else:
+                self.lblchan['type'] = 'units'
+
+            if 'fct' in chlb:
+                self.lblchan['fct'] = chlb['fct']
+            else:
+                self.lblchan['fct'] = 1.
+
+            if 'fmt' in chlb:
+                self.lblchan['fmt'] = chlb['fmt']
+            else:
+                if self.lblchan['type'] == 'units':
+                    self.lblchan['fmt'] = '.2f'
+                elif self.lblchan['type'] == 'chan' :
+                    self.lblchan['fmt'] = 'd'
+
+
+            if 'ds_label' in chlb:
+                cfg_label = copy.deepcopy(chlb['ds_label'])
+
+                self.ds_label = mrk.Label(cfg_label, parent, fonts=None)
+
+        else:
+            self.lblchan = None
 
 
             
@@ -116,7 +160,7 @@ class Dataset(object) :
         ra, dec = new.lon.arcsec, new.lat.arcsec
                     
         w.wcs.crval = ra, dec
-        w.wcs.ctype = 'XOFFSET', 'YOFFSET'
+        w.wcs.ctype = 'RA -- XOFFSET', 'DEC -- YOFFSET'
         w.wcs.cunit = 'arcsec', 'arcsec'
         w.wcs.cdelt = wcs.utils.proj_plane_pixel_scales(w)*3600
 
@@ -213,11 +257,19 @@ class Dataset(object) :
     def show_colorscale(self, g) :
         """Show a colorscale of the dataset."""
             
+        pixrg_args = {}
+        if self.pixrange.smooth:
+            pixrg_args['smooth'] = self.pixrange.smooth
+
+        if self.pixrange.kernel:
+            pixrg_args['kernel'] = self.pixrange.kernel
+
+            
         g.show_colorscale(vmin=self.pixrange.range[0],
                           vmax=self.pixrange.range[1],
                           stretch=self.pixrange.stretch,
                           cmap=self.pixrange.colormap,
-                          aspect='equal')
+                          aspect='equal', **pixrg_args)
 
 
         
@@ -229,17 +281,87 @@ class Dataset(object) :
         else :
             hdu = self.filename
 
+        if self.slices :
+            hdu = self.get_slice(hdu=hdu)
+
+        cntr_args = {}
+        if self.contour.smooth:
+            cntr_args['smooth'] = self.contour.smooth
+
+        if self.contour.kernel:
+            cntr_args['kernel'] = self.contour.kernel
+
+        
         g.show_contour(data=hdu,levels=self.contour.levels,
                        colors=self.contour.colors,
                        linewidths=self.contour.linewidth,
-                       linestyles=self.contour.linestyle)
+                       linestyles=self.contour.linestyle,
+                       **cntr_args)
+
+
+
+
+    def get_slice(self, hdu):
+        """gets a slice out of a data cube"""
+
+        hh = fits.open(hdu)[0]
+        w = wcs.WCS(hh.header)
+
+        save_type = []
+        naxis = w.naxis
+        ssl = copy.deepcopy(self.slices)
+
+            
+        for dx in range(naxis):
+            rev_idx = naxis - dx - 1
+            if dx in self.dims:
+                save_type.append(w.wcs.ctype[dx])
+
+            else:
+                index = ssl.pop(0)
+                if self.lblchan :
+                    self.build_channel_label(dx, index, w)
+                    
+                hh.data = hh.data.take(indices=index, axis=rev_idx)
+
+        ct = 0
+        for dx in range(naxis):
+            if not w.wcs.ctype[ct] in save_type:
+                w = w.dropaxis(ct)
+            else:
+                ct += 1
+
+        hh.header = w.to_header()
         
+        return hh
 
 
+
+    def build_channel_label(self, ids, ichan, w) :
+        """Builds the label to show the channel number or units"""
+        
+        if ids == self.lblchan['axis'] :
+            unit_fmt = '{0:'+self.lblchan['fmt']+'}'
+            self.chan = ichan + 1
+
+            if self.lblchan['type'] == 'units':
+                self.unit =((self.chan - w.wcs.crpix[ids]) * w.wcs.cdelt[ids] +
+                            w.wcs.crval[ids]) * self.lblchan['fct']
+                
+                self.lbltxt = unit_fmt.format(self.unit)
+                        
+            elif self.lblchan['type'] == 'chan':
+                self.lbltxt = unit_fmt.format(self.chan)
+
+            self.ds_label.label_props['text'] = self.lbltxt
+
+
+            
         
 class Pixrange(object):
     """ create a pixrange
     """
+
     def __init__(self, cnfg, parent):
 
         if cnfg != None and 'base' in cnfg:
@@ -307,6 +429,26 @@ class Pixrange(object):
                 self.stretch = parent.pixrange.stretch
             except AttributeError:
                 pass
+
+
+        if cnfg != None and 'smooth' in cnfg:
+            self.smooth = cnfg['smooth']
+        else:
+            try:
+                self.smooth = parent.pixrange.smooth
+
+            except AttributeError:
+                self.smooth = None
+
+
+        if cnfg != None and 'kernel' in cnfg:
+            self.kernel = cnfg['kernel']
+        else:
+            try:
+                self.kernel = parent.pixrange.kernel
+                
+            except AttributeError:
+                self.kernel = None
 
             
 
@@ -415,6 +557,26 @@ class Contour(object):
                 self.linestyle = '-'
 
 
+        if cnfg != None and 'smooth' in cnfg:
+            self.smooth = cnfg['smooth']
+        else:
+            try:
+                self.smooth = parent.contour.smooth
+
+            except AttributeError:
+                self.smooth = None
+
+
+        if cnfg != None and 'kernel' in cnfg:
+            self.kernel = cnfg['kernel']
+        else:
+            try:
+                self.kernel = parent.contour.kernel
+                
+            except AttributeError:
+                self.kernel = None
+
+            
         if name:
             if not hasattr(self, 'levels'):
                 try :
@@ -424,12 +586,14 @@ class Contour(object):
                              name)
                     sys.exit("Exiting")
 
+
                     
     @staticmethod
     def scale_values(factor, vlist):
         """Scales the values in vlist by factor."""
 
         return [(float(i) * factor) for i in vlist]
+
 
         
     def add_levels(self, new_levels) :
@@ -448,6 +612,7 @@ class Contour(object):
             prev.extend(new_levels)
             prev.sort()
             self.levels = prev
+
 
 
     def generate_levels(self, lev_list):
