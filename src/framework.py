@@ -24,7 +24,6 @@ import markers as mrk
 
 from astropy.io import fits
 from astropy import wcs
-from offset import linear_offset_coords
 
 
 
@@ -33,8 +32,8 @@ class Figure(object):
     
     def __init__(self, cnfg, dirs):
 
-        if 'page' in cnfg :
-            fig_cfg= cnfg['page']
+        if 'figure' in cnfg :
+            fig_cfg= cnfg['figure']
             
             if 'outfile' in fig_cfg:
                 self.outfile = os.path.join(dirs['outdir'], fig_cfg['outfile'])
@@ -56,8 +55,8 @@ class Figure(object):
             else :
                 self.name = "NO_NAME"
 
-        if 'panels' in cnfg:
-            self.frame = Frame(cnfg['panels'], dirs)
+        if 'frame' in cnfg:
+            self.frame = Frame(cnfg['frame'], dirs)
         else:
             print("ERROR: no Frame definition")
             sys.exit(1)
@@ -96,6 +95,7 @@ class Frame(object):
     def __init__(self, cnfg, dirs):
 
         self.wkdir = dirs['wkdir']
+        self.calc = None
 
         if 'font' in cnfg:
             self.fonts = self.read_font(cnfg['font'])
@@ -107,6 +107,23 @@ class Frame(object):
         else:
             self.yx = [1,1]
 
+        self.gridsize = self.yx[0] * self.yx[1]
+        self.gridpanels = {}
+        for gr in range(self.gridsize) :
+            nwstr = {'pstr' :  '' , 'data' : [] }
+            self.gridpanels[gr] = nwstr
+
+            
+        if 'pad' in cnfg:
+            self.pad = cnfg['pad']
+        else :
+            self.pad = None
+
+        if 'margins' in cnfg:
+            self.margins = cnfg['margins']
+        else :
+            self.margins = None
+            
         if 'view' in cnfg:
             self.view = View(cnfg['view'], self)
 
@@ -122,7 +139,7 @@ class Frame(object):
             self.pixrange = dsp.Pixrange(cnfg['pixrange'], self)
 
         if 'contours' in cnfg:
-            self.contour = dsp. Contour(cnfg['contours'], self)
+            self.contour = dsp.Contour(cnfg['contours'], self)
 
         if 'axes' in cnfg:
             self.axes = Axes(cnfg['axes'], self, fonts=self.fonts)
@@ -134,23 +151,168 @@ class Frame(object):
             
         self.wd = dirs['wkdir']
 
+
+        data_str = [ d for d in cnfg if 'dataset' in d]
+
+        if data_str : 
+            self.datasets = {}
+            self.load_generic_datasets(data_str, cnfg)
+
+
         panel_str = [k for k in cnfg if 'panel' in k]
 
         if panel_str :
-            panel_list = []
-            p_idx = 0
-            
-            for panel in panel_str:
-                print("    + adding panel:", panel, "...")
-                panel_list.append(Panel(cnfg[panel], panel, p_idx, self))
-                p_idx += 1
+            self.load_panels(panel_str,cnfg)
 
-            self.panels = panel_list
+
+        panel_list = []
+
+        for pnl in range(self.gridsize):
+
+            if self.gridpanels[pnl]['pstr']:
+                print("    + adding panel:", pnl, "...")
+                panel = self.gridpanels[pnl]['pstr']
+                panel_list.append(Panel(cnfg[panel], panel, pnl, self))
+
+            elif self.gridpanels[pnl]['data']:
+                print("    + adding panel:", pnl, "...")
+                panel_list.append(Panel(None, 'panel_'+'g'+str(pnl), pnl, self))
+
+
+        self.panels = panel_list
         
-        else:
-            self.panels = []
+                
+
+    def load_generic_datasets(self, d_str, cfg):
+        """Reads the values of a generic dataset"""
+        
+        for g in d_str:
+
+            if 'panels' in cfg[g]:
+                p = cfg[g]['panels']
+
+                lst_pan = []
+                for it in p:
+                    sit = str(it).split("-")
+                    if len(sit) == 1:
+                        pn = int(sit[0])
+
+                        if pn > self.gridsize-1:
+                            print("ERROR: dataset panels definition is out of",
+                                  "bounds")
+                            sys.exit(1)
+                                
+                        lst_pan.append(pn)
+
+                    elif len(sit) == 2:
+                        if not sit[0]:
+                            print("ERROR: wrong dataset panels definition")
+                            sys.exit(1)
+                                
+                        ini_rg = int(sit[0])
+                        end_rg = int(sit[1])
+                        if ini_rg > end_rg:
+                            swap = ini_rg
+                            ini_rg = end_rg
+                            end_rg = swap
+
+                        if end_rg > self.gridsize-1:
+                            end_rg = self.gridsize - 1
+                            
+                        b = list( range(ini_rg, end_rg+1) )
+                            
+                        lst_pan.extend(b)
+
+                    else:
+                        print("ERROR: wrong format in dataset panels",
+                              "definition")
+                        sys.exit(1)
+                    
+                panel_set = list(set(lst_pan))
+
+            else:
+                panel_set = list( range(0, self.gridsize) )
+
+            if 'slices' in cfg[g]:
+                slc = cfg[g]['slices']
+                
+                sequences = {}
+
+                for ix, sl in enumerate(slc):
+                    rglist = []
+                    
+                    tp = tuple(sl)
+
+                    for it in tp:
+
+                        slrg = str(it).split("-")
+
+                        if len(slrg) == 1 :
+                            rglist.append(int(slrg[0]))
+
+                        elif len(slrg) == 2:
+                            if not slrg[0]:
+                                print("ERROR: wrong dataset slices definition")
+                                sys.exit(1)
+                                
+                            ini_sl = int(slrg[0])
+                            end_sl = int(slrg[1])
+                            if ini_sl > end_sl:
+                                swap = ini_sl
+                                ini_sl = end_sl
+                                end_sl = swap
+
+                            rglist.extend(list(range(ini_sl, end_sl+1)))
+
+                        else:
+                            print("ERROR: wrong format in dataset slices",
+                                  "definition")
+
+                    while len(rglist) < len(panel_set):
+                        rglist.append(rglist[-1])
+
+                    sequences[ix] = rglist
+                        
+                    
+            arr_slc = np.transpose(np.array([sequences[0], sequences[1]]))
+
+            for ct, panel in enumerate(panel_set):
+                ds_str = g+'__'+str(panel)
+            
+                self.datasets[ds_str] = { k: cfg[g][k] for k in
+                                          cfg[g].keys() - {'panels'} -
+                                          {'slices'}}
+                self.datasets[ds_str]['slices'] = list(arr_slc[ct])
+
+                self.gridpanels[panel]['data'] = self.add_to_list(
+                    self.gridpanels[panel]['data'], ds_str)
 
 
+
+    def load_panels(self, p_str, cfg):
+        """Load panels definition"""
+        
+        p_idx = 0
+
+        p_order = self.read_panel_order(p_str, cfg)
+        self.npanels = len(p_order)
+
+        for ct, panel in enumerate(p_str):
+            p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
+
+            if p_ord in self.gridpanels:
+                self.gridpanels[p_ord]['pstr'] = panel
+
+
+
+    @staticmethod
+    def add_to_list(plist, new):
+
+        nstr = plist
+        nstr.append(new)
+        return nstr
+
+    
 
     @staticmethod
     def read_font(ff):
@@ -163,6 +325,41 @@ class Frame(object):
 
 
 
+    def read_panel_order(self, plist, cfg):
+        """look for order key in panels config and add value to order list"""
+        
+        order_list = []
+        
+        for pnl in plist:
+            if 'order' in cfg[pnl] :
+                ord_val = cfg[pnl]['order']
+                if ord_val < 0 or ord_val > self.gridsize-1:
+                    print("ERROR: wrong panel order value")
+                    sys.exit(1)
+                order_list.append(ord_val)
+            else:
+                order_list.append(None)
+
+        return order_list
+
+
+
+    @staticmethod
+    def set_panel_order(ord_id, i, idx):
+        """get the order id of the panel"""
+        
+        if ord_id[i] != None :
+            order = ord_id[i]
+        else:
+            while idx in ord_id:
+                idx += 1
+            order = idx
+            idx += 1
+
+        return order, idx
+
+    
+
     def add_panels(self, fig):
         """Add panels to the figure.
 
@@ -172,12 +369,19 @@ class Frame(object):
 
         p_idx = 0
         gc = []
-        
+
+
+        if self.pad :
+            fig.subplots_adjust(wspace=self.pad[0], hspace=self.pad[1])
+
+        if self.margins:
+            fig.subplots_adjust(left=self.margins[0], right=self.margins[1],
+                                bottom=self.margins[2], top=self.margins[3])
+
         for p in self.panels :
             print("    + plotting panel:", p.name, "...")
             p.add_panel(fig, gc, p_idx)
             p_idx += 1
-
 
             
             
@@ -188,47 +392,63 @@ class Panel(object) :
 
         self.name = name
 
-        if 'font' in cnfg:
+        if cnfg != None and 'font' in cnfg:
             self.fonts = self.read_font(cnfg['font'], parent)
         elif hasattr(parent, 'fonts'):
             self.fonts = self.read_font(None, parent)
         else:
             self.fonts = None
 
-        if 'position' in cnfg:
+        if cnfg != None and 'position' in cnfg:
             cpos = cnfg['position']
-            self.position = (cpos[0], cpos[1], cpos[2])
+            if np.shape(cpos)[0] == 3:
+                self.position = (cpos[0], cpos[1], cpos[2])
+            elif np.shape(cpos)[0] == 4:
+                self.position = [cpos[0], cpos[1], cpos[2], cpos[3]]
+            else :
+                print("  ERROR: wrong definition of panel position")
+                sys.exit(1)
+                
         else:
             self.position = (parent.yx[0], parent.yx[1], idx+1)
 
             
-        if 'view' in cnfg:
+        if cnfg != None and 'order' in cnfg:
+            self.order = cnfg['order']
+        else:
+            self.order = None
+            
+            
+        if cnfg != None and 'view' in cnfg:
             self.view = View(cnfg['view'], parent)
         elif hasattr(parent, 'view'):
             self.view = View(None, parent)
 
-        if 'axes' in cnfg:
-            self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts)
+        if cnfg != None and 'axes' in cnfg:
+            self.axes = Axes(cnfg['axes'], parent, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
         elif hasattr(parent, 'axes'):
-            self.axes = Axes(None, parent, fonts=self.fonts)
+            self.axes = Axes(None, parent, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
         else:
-            self.axes = Axes(None, None, fonts=self.fonts)
+            self.axes = Axes(None, None, fonts=self.fonts, p_id=idx,
+                             tc=(parent.npanels, parent.yx[1]))
             
-        if 'labels' in cnfg:
+        if cnfg != None and 'labels' in cnfg:
             self.labels = mrk.Label(cnfg['labels'], parent, fonts=self.fonts)
-        elif hasattr(parent, 'markers'):
+        elif hasattr(parent, 'labels'):
             self.labels = mrk.Label(None, parent, fonts=self.fonts)
         else:
             self.labels = None
 
-        if 'markers' in cnfg:
+        if cnfg != None and 'markers' in cnfg:
             self.markers = mrk.Marker(cnfg['markers'], parent, fonts=self.fonts)
         elif hasattr(parent, 'markers'):
             self.markers = mrk.Marker(None, parent, fonts=self.fonts)
         else:
             self.markers = None
 
-        if 'colorbar' in cnfg:
+        if cnfg != None and 'colorbar' in cnfg:
             self.colorbar = dsp.Colorbar(cnfg['colorbar'], parent,
                                          fonts=self.fonts)
         elif hasattr(parent, 'colorbar'):
@@ -238,18 +458,24 @@ class Panel(object) :
             
         dataset_list = []
 
-        dataset_str = [k for k in cnfg if 'dataset' in k]
-
-        if dataset_str :
-            for d in dataset_str:
-                dataset_list.append(dsp.Dataset(cnfg[d], d, parent))
+        plist = parent.gridpanels[idx]['data']
+        if plist:
+            for d in plist:
+                dataset_list.append(dsp.Dataset(parent.datasets[d], d, parent))
                 
-            self.datasets = dataset_list
-        else:
-            self.datasets = []
+
+        if cnfg != None:
+            dataset_str = [k for k in cnfg if 'dataset' in k]
+
+            if dataset_str :
+                for d in dataset_str:
+                    dataset_list.append(dsp.Dataset(cnfg[d], d, parent))
+
+                
+        self.datasets = dataset_list
 
 
-            
+
     @staticmethod
     def read_font(ff, parent):
 
@@ -290,6 +516,7 @@ class Panel(object) :
                 #  below has to be separated
                 if vw.center == None:
                     vw.center = d.get_reference()
+                    #vw.center = d.center
 
                 refpos = vw.center
                 if vw.coords == 'off' :
@@ -297,15 +524,32 @@ class Panel(object) :
                     vw.center = (ra, dec)
                 else :
                     hdu = d.filename
-                    
-                gc.append(aplpy.FITSFigure(hdu,
-                                           figure=fig,
+
+
+                if d.slices :
+                    hdu = d.get_slice(hdu=hdu)
+
+                # hdu ==> d.hdu after doing all conversions
+
+                gc.append(aplpy.FITSFigure(hdu, figure=fig,
                                            subplot=self.position,
                                            dimensions=d.dims))
+                
+
                 vw.set_view(gc[idx])
 
             d.show(gc[idx], coords=vw.coords, ref=refpos)
 
+
+            # adds channel label
+            try:
+                if d.lblchan:
+                    #d.ds_label.label_props['text'] = d.lbltxt
+                    self.labels.label_list.append(d.ds_label)
+                    
+            except AttributeError:
+                pass
+            
             cid += 1
 
             try:
@@ -333,7 +577,8 @@ class Panel(object) :
                 mk.add_markers(gc[idx])
 
         if hasattr(self, 'colorbar'):
-            self.colorbar.set_colorbar(gc[idx])
+            if self.colorbar != None :
+                self.colorbar.set_colorbar(gc[idx])
 
             
 
@@ -453,8 +698,13 @@ class View(object) :
 class Axes(object):
     """Class that contains the definition of the plot axes."""
     
-    def __init__(self, cfg, parent, fonts=None):
+    def __init__(self, cfg, parent, fonts=None, p_id=-1, tc=(1,1)):
 
+        
+        if p_id > -1 :
+            self.set_axes_in_grid(p_id, tc, parent)
+
+            
         if cfg != None and 'axes_labels' in cfg:
             if hasattr(parent, 'axes'):
                 self.read_axes_labels(cfg['axes_labels'], parent.axes,
@@ -581,6 +831,19 @@ class Axes(object):
 
 
 
+    def set_axes_in_grid(self, pid, t, parent):
+        """Hides axis in grid when no padding"""
+        
+        if (pid % t[1]) != 0 and parent.pad[0] < 0.16:
+            self.axis_yhide = True
+            self.ticklabel_yhide = True 
+
+        if (t[0] - pid) > t[1] and parent.pad[1] < 0.12:
+            self.axis_xhide = True
+            self.ticklabel_xhide = True
+
+
+
     def set_axes(self, g):
         """Sets axes properties."""
 
@@ -690,6 +953,4 @@ class Axes(object):
             if self.ticklabel_yhide:
                 gp.hide_y()
 
-            
-
-
+        
