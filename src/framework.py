@@ -109,10 +109,7 @@ class Frame(object):
 
         self.gridsize = self.yx[0] * self.yx[1]
         self.gridpanels = {}
-        for gr in range(self.gridsize) :
-            nwstr = {'pstr' :  '' , 'data' : [] }
-            self.gridpanels[gr] = nwstr
-
+        self.panel_set = []
             
         if 'pad' in cnfg:
             self.pad = cnfg['pad']
@@ -165,9 +162,11 @@ class Frame(object):
             self.load_panels(panel_str,cnfg)
 
 
+        self.panel_set = list(set(self.panel_set))
+        
         panel_list = []
 
-        for pnl in range(self.gridsize):
+        for pnl in self.panel_set:
 
             if self.gridpanels[pnl]['pstr']:
                 print("    + adding panel:", pnl, "...")
@@ -185,8 +184,12 @@ class Frame(object):
 
     def load_generic_datasets(self, d_str, cfg):
         """Reads the values of a generic dataset"""
+
         
         for g in d_str:
+
+            panel_set = ''
+            arr_slc = None
 
             if 'panels' in cfg[g]:
                 p = cfg[g]['panels']
@@ -197,11 +200,6 @@ class Frame(object):
                     if len(sit) == 1:
                         pn = int(sit[0])
 
-                        if pn > self.gridsize-1:
-                            print("ERROR: dataset panels definition is out of",
-                                  "bounds")
-                            sys.exit(1)
-                                
                         lst_pan.append(pn)
 
                     elif len(sit) == 2:
@@ -216,8 +214,6 @@ class Frame(object):
                             ini_rg = end_rg
                             end_rg = swap
 
-                        if end_rg > self.gridsize-1:
-                            end_rg = self.gridsize - 1
                             
                         b = list( range(ini_rg, end_rg+1) )
                             
@@ -229,15 +225,15 @@ class Frame(object):
                         sys.exit(1)
                     
                 panel_set = list(set(lst_pan))
-
-            else:
-                panel_set = list( range(0, self.gridsize) )
+                
+                self.panel_set.extend(panel_set)
 
             if 'slices' in cfg[g]:
                 slc = cfg[g]['slices']
                 
                 sequences = {}
-
+                num_gen_slices = 0
+                
                 for ix, sl in enumerate(slc):
                     rglist = []
                     
@@ -268,26 +264,51 @@ class Frame(object):
                             print("ERROR: wrong format in dataset slices",
                                   "definition")
 
-                    while len(rglist) < len(panel_set):
-                        rglist.append(rglist[-1])
+                        if len(rglist) > num_gen_slices:
+                            num_gen_slices = len(rglist)
+
 
                     sequences[ix] = rglist
-                        
-                    
-            arr_slc = np.transpose(np.array([sequences[0], sequences[1]]))
 
+                for k in sequences:
+                    while len(sequences[k]) < num_gen_slices :
+                        sequences[k].append(sequences[k][-1])
+
+                arr_slc = np.transpose(np.array([sequences[0], sequences[1]]))
+
+                
+                if panel_set:
+                    if len(panel_set) != num_gen_slices:
+                        print("ERROR: number of generated panels does not",
+                              "coincide with the number of channels")
+
+                else:
+                    panel_set = list( range(num_gen_slices) )
+                    if self.panel_set :
+                        self.panel_set.extend(panel_set)
+                    else :
+                        self.panel_set = panel_set
+
+
+                
             for ct, panel in enumerate(panel_set):
                 ds_str = g+'__'+str(panel)
             
                 self.datasets[ds_str] = { k: cfg[g][k] for k in
                                           cfg[g].keys() - {'panels'} -
                                           {'slices'}}
+                #check if arr_slc does not exist:
                 self.datasets[ds_str]['slices'] = list(arr_slc[ct])
-
+                
+                if not panel in self.gridpanels:
+                    nwstr = {'pstr' :  '' , 'data' : [] }
+                    self.gridpanels[panel] = nwstr
+                    
                 self.gridpanels[panel]['data'] = self.add_to_list(
                     self.gridpanels[panel]['data'], ds_str)
 
 
+        
 
     def load_panels(self, p_str, cfg):
         """Load panels definition"""
@@ -300,8 +321,13 @@ class Frame(object):
         for ct, panel in enumerate(p_str):
             p_ord, p_idx = self.set_panel_order(p_order, ct, p_idx)
 
-            if p_ord in self.gridpanels:
-                self.gridpanels[p_ord]['pstr'] = panel
+            if not p_ord in self.panel_set:
+                self.panel_set.append(p_ord)
+                nwstr = {'pstr' :  '' , 'data' : [] }
+                self.gridpanels[p_ord] = nwstr
+
+            #if p_ord in self.gridpanels:
+            self.gridpanels[p_ord]['pstr'] = panel
 
 
 
