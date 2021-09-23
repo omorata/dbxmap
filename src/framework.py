@@ -230,29 +230,62 @@ class Frame(object):
 
             if 'slices' in cfg[g]:
                 slc = cfg[g]['slices']
-                
+
+                if 'slice_units' in cfg[g]:
+                    slc_u = cfg[g]['slice_units']
+                    
+                    if cfg[g]['filename']:
+                        hdu = cfg[g]['filename']
+                        hh = fits.open(hdu)[0]
+                        w = wcs.WCS(hh.header)
+                else:
+                    slc_u = None
+                    
                 sequences = {}
                 num_gen_slices = 0
+                dims = list(cfg[g]['dims'])
                 
                 for ix, sl in enumerate(slc):
                     rglist = []
                     
                     tp = tuple(sl)
-
-                    for it in tp:
-
+                    for idx, it in enumerate(tp):
                         slrg = str(it).split("-")
 
                         if len(slrg) == 1 :
+                            
+                            if slc_u and slc_u[ix]:
+                            
+                                new_slice, dims, dims_ix  = \
+                                    dsp.Dataset.from_vel_to_chan(
+                                        self, w, vel=np.float(slrg[0]),
+                                        vel_u=slc_u[ix], dims=dims)
+                                
+                                slrg[0] = new_slice
+                                dims.append(dims_ix)
+
                             rglist.append(int(slrg[0]))
 
                         elif len(slrg) == 2:
                             if not slrg[0]:
                                 print("ERROR: wrong dataset slices definition")
                                 sys.exit(1)
-                                
+
+                            if slc_u and slc_u[ix]:
+                                for j, islc in enumerate(slrg) :
+
+                                    new_slice, dims, dims_ix = \
+                                        dsp.Dataset.from_vel_to_chan(
+                                            self, w, vel=np.float(islc),
+                                            vel_u=slc_u[ix], dims=dims)
+
+                                    slrg[j] = int(new_slice)
+
+                                dims.append(dims_ix)
+
                             ini_sl = int(slrg[0])
                             end_sl = int(slrg[1])
+
                             if ini_sl > end_sl:
                                 swap = ini_sl
                                 ini_sl = end_sl
@@ -263,7 +296,7 @@ class Frame(object):
                         else:
                             print("ERROR: wrong format in dataset slices",
                                   "definition")
-
+                            
                         if len(rglist) > num_gen_slices:
                             num_gen_slices = len(rglist)
 
