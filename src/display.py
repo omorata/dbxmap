@@ -72,6 +72,11 @@ class Dataset(object) :
             self.slices = cnfg['slices']
         else:
             self.slices = None
+
+        if 'slice_units' in cnfg:
+            self.slice_units = cnfg['slices']
+        else :
+            self.slice_units = None
             
         if 'beam' in cnfg:
             self.read_beam_parameters(dict(cnfg['beam']))
@@ -311,7 +316,6 @@ class Dataset(object) :
         naxis = w.naxis
         ssl = copy.deepcopy(self.slices)
 
-            
         for dx in range(naxis):
             rev_idx = naxis - dx - 1
             if dx in self.dims:
@@ -335,8 +339,44 @@ class Dataset(object) :
         
         return hh
 
+    
+
+    def from_vel_to_chan(self, w, vel='', vel_u='', dims=[0,1]):
+        """Transform units of velocity to channels"""
+        
+        h_units = w.world_axis_units
+        unit_size = np.shape(h_units)[0]
+
+        for d in range(unit_size):
+             if not d in dims:
+
+                #if h_units[d] != '':
+                 d_units = Dataset.conv_units(h_units[d])
+                 sl_units = Dataset.conv_units(vel_u)
+                 fct = (1. * sl_units).to(d_units) / d_units
+
+                 vel *= fct
+                 refpx = w.wcs.crpix[d]
+                 refval = w.wcs.crval[d]
+                 delta = w.wcs.cdelt[d]
+                 ppx = np.round(refpx + (vel - refval) / delta) - 1.
+                    
+                 return ppx, dims, d
+                #else:
 
 
+                
+    @staticmethod
+    def conv_units(old_unit):
+        """convert units in text to astropy units"""
+        
+        if old_unit == 'm s-1' or old_unit == 'm/s':
+            return u.m / u.s
+        elif old_unit == 'km s-1' or old_unit == 'km/s':
+            return u.km / u.s
+    
+
+        
     def build_channel_label(self, ids, ichan, w) :
         """Builds the label to show the channel number or units"""
         
