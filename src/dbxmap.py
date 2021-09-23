@@ -38,14 +38,15 @@ if __name__ == "__main__" :
 
     # process the configuration
     #
-    fig = cfg.process_config(files, dirs)
+    figs = cfg.process_config(files, dirs)
 
-    # plot the figure
+    # plot the figure(s)
     #
-    fig.create()
+    for f in figs :
+        f.create()
 
-    fig.f_print()
+        f.f_print()
     
-    fig.end()
+        f.end()
     
 ##-- End of main -------------------------------------------------------

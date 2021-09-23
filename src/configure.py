@@ -12,6 +12,9 @@ import os
 
 import yaml
 
+import numpy as np
+import copy
+
 import framework as fw
 
 
@@ -52,9 +55,10 @@ def process_config(ifiles, dirs) :
         print("  + dumping configuration file in lofgfile:", logfile)
         dump_config(logfile, cfg)
         
-    G = fw.Figure(cfg, dirs)
+    G = set_pages(fw.Figure(cfg, dirs))
 
     return G
+
 
 
 def read_command_line() :
@@ -70,6 +74,40 @@ def read_command_line() :
     parser.add_argument('-w', '--work_dir', help='working directory',
                         default='.')
     return parser.parse_args()
+
+
+
+def set_pages(G):
+
+    pyx = G.frame.yx
+    outf = os.path.splitext(G.outfile)
+    sz = pyx[0] * pyx[1]
+    
+    K = []
+    
+    p = G.frame.panels
+
+    pages = int(np.ceil(len(p) / sz))
+    
+    if pages > 1:
+        dig = int(np.log10(pages)+1)
+        outf_fmt = '{0:s}-page_{1:0'+str(dig)+'d}{2:s}'
+        
+     
+        for jp in range(pages) :
+            K.append(copy.deepcopy(G))
+            K[jp].frame.panels = []
+            K[jp].outfile = outf_fmt.format(outf[0], jp, outf[1])
+
+        for i in p:
+            page = int((i.position[2] - 1) / sz)
+            i.position = (pyx[0], pyx[1], i.position[2] - page * sz)
+            K[page].frame.panels.append(i)
+
+    else:
+        K.append(G)
+        
+    return K
 
 
 ##-- End of functions --------------------------------------------------
