@@ -26,7 +26,6 @@ from astropy.io import fits
 from astropy import wcs
 
 
-
 class Figure(object):
     """Define object Figure."""
     
@@ -639,7 +638,9 @@ class Panel(object) :
             if self.colorbar != None :
                 self.colorbar.set_colorbar(gc[idx])
 
-            
+        gc[idx].ax.legend(loc='upper left')
+
+        
 
     def set_pixel_first(self):
         """Put the dataset with a pixel range in the first position."""
