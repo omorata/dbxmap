@@ -21,6 +21,8 @@ import numpy as np
 
 import display as dsp
 import markers as mrk
+import legend as legend
+
 
 from astropy.io import fits
 from astropy import wcs
@@ -144,6 +146,9 @@ class Frame(object):
             self.colorbar = dsp.Colorbar(cnfg['colorbar'], self,
                                          fonts=self.fonts)
 
+
+        if 'legend' in cnfg:
+            self.legend = legend.Legend(cnfg['legend'], self)
             
         self.wd = dirs['wkdir']
 
@@ -506,6 +511,15 @@ class Panel(object) :
         else:
             self.markers = None
 
+            
+        if cnfg != None and 'legend' in cnfg:
+            self.legend = legend.Legend(cnfg['legend'], parent)
+        elif hasattr(parent, 'legend'):
+            self.legend = legend.Legend(None, parent)
+        else :
+            self.legend = None
+
+            
         if cnfg != None and 'colorbar' in cnfg:
             self.colorbar = dsp.Colorbar(cnfg['colorbar'], parent,
                                          fonts=self.fonts)
@@ -597,7 +611,7 @@ class Panel(object) :
                 vw.set_view(gc[idx])
 
             d.show(gc[idx], coords=vw.coords, ref=refpos)
-
+            
 
             # adds channel label
             try:
@@ -638,9 +652,11 @@ class Panel(object) :
             if self.colorbar != None :
                 self.colorbar.set_colorbar(gc[idx])
 
-        gc[idx].ax.legend(loc='upper left')
 
-        
+        if self.legend != None:
+            self.legend.add_legend(gc[idx])
+
+            
 
     def set_pixel_first(self):
         """Put the dataset with a pixel range in the first position."""
