@@ -7,56 +7,46 @@
 ## markers in the plot
 ##
 
+import copy
 
 import matplotlib.lines as mlines
-from pprint import pprint
 
 
 class Legend(object) :
     """ create legend """
 
     def __init__(self, cnfg, parent):
-    
 
-        if cnfg != None and 'loc' in cnfg:
-            self.loc = cnfg['loc']
-        else :
-            try:
-                self.loc = parent.legend.loc
+        self.legend_props = {}
+        
+        if hasattr(parent, 'legend'):
+            if hasattr(parent.legend, 'legend_props') :
+                self.legend_props = copy.deepcopy(parent.legend.legend_props)
 
-            except AttributeError :
-                self.loc = 'lower right'
 
-                
-        if cnfg != None and 'fontsize' in cnfg:
-            self.fontsize = cnfg['fontsize']
-        else :
-            try:
-                self.fontsize = parent.legend.fontsize
+        if cnfg != None:
+            for icf in cnfg.keys():
+                self.legend_props[icf] = cnfg[icf]
 
-            except AttributeError :
-                self.fontsize = 'x-small'
-
-        if cnfg != None and 'marker_size' in cnfg:
-            self.markersize = cnfg['marker_size']
-        else :
-            try:
-                self.markersize = parent.legend.markersize
-
-            except AttributeError :
-                self.markersize = 50
-
-                
-        if cnfg != None and 'frameon' in cnfg:
-            self.frameon = cnfg['frameon']
-        else :
-            try:
-                self.frameon = parent.legend.frameon
-
-            except AttributeError :
-                self.loc = True
-
+        if 'bbox_to_anchor' in self.legend_props:
+            self.legend_props['bbox_to_anchor'] =  self.read_tuple('float',
+                                                            'bbox_to_anchor')
+            print(self.legend_props['bbox_to_anchor'])
         self.handles = []
+
+
+
+    def read_tuple(self, valtype, key):
+        """Process a tuple from the yaml file."""
+
+        tuples = []
+
+        tval = self.legend_props[key].strip('()').split(',')
+        for i, val in enumerate(tval):
+            if valtype == 'float':
+                tuples.append(float(tval[i]))
+
+        return tuples
 
 
 
@@ -94,7 +84,6 @@ class Legend(object) :
                 pppath = b._paths[0]
                 self.handles.append(mlines.Line2D([],[], color=b._facecolors,
                                                   marker=pppath,
-                                                  markersize=self.markersize,
                                                   linestyle="",
                                                   linewidth=b._linewidths,
                                                   label=l[2:]))
@@ -105,7 +94,5 @@ class Legend(object) :
         """create the legend"""
         
         if self.handles :
-            g.ax.legend(handles=self.handles, loc=self.loc,
-                         fontsize=self.fontsize, frameon=self.frameon,
-                         fancybox=True, shadow=False)
+            g.ax.legend(handles=self.handles, **self.legend_props )
     
