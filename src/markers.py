@@ -27,10 +27,11 @@ class Marker(object) :
     lstyle_props = ['color', 'family', 'style', 'variant', 'stretch', 'weight',
                     'size']
 
-    props = ['type', 'show_label', 'lpad', 'alpha', 'zorder', 'linecolor']
+    props = ['type', 'show_label', 'lpad', 'alpha', 'zorder', 'linecolor',
+             'legend_label']
     
-    ini_properties = ['show_label', 'lpad', 'zorder']
-    defaults = [False, [0,0], 5]
+    ini_properties = ['show_label', 'lpad', 'zorder', 'legend_label']
+    defaults = [False, [0,0], 5, None]
 
     
     def __init__ (self, cfg, parent, fonts=None):
@@ -57,6 +58,7 @@ class Marker(object) :
                 for p in fonts:
                     self.marker_props[p] = fonts[p]
 
+
         if cfg != None :
             for prop in property_list :
                 if prop in cfg:
@@ -67,6 +69,7 @@ class Marker(object) :
 
                 self.marker = self.read_markers(fname)
 
+                
             marker_str = [k for k in cfg if 'marker' in k]
 
             if marker_str :
@@ -91,7 +94,11 @@ class Marker(object) :
         marker_fields = self.marker
         
         for mk in marker_fields:
-
+            if 'legend_label' in self.marker_props:
+                layername = 'm_' + self.marker_props['legend_label']
+                mk['style']['layer'] = layername
+                
+            
             if mk['type'] == 'polygon' :
                 g.show_polygons(mk['corners'], **mk['style'])
 
@@ -169,7 +176,7 @@ class Marker(object) :
         attrib['l_style'] = labelstyle
 
         attrib['lpad'] = self.marker_props['lpad']
-
+ 
         return attrib
 
 
@@ -233,6 +240,7 @@ class Marker(object) :
         else :
             attrib['c'] = self.marker_props['facecolor']
 
+        
         return attrib
 
 
