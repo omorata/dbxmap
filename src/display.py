@@ -256,7 +256,7 @@ class Dataset(object) :
 
         elif self.dtype == 'cntr' :
             self.show_contour(g, **kwargs)
-
+            
 
             
     def show_colorscale(self, g) :
@@ -278,7 +278,7 @@ class Dataset(object) :
 
 
         
-    def show_contour(self, g, coords='abs', ref='') :
+    def show_contour(self, g, coords='abs', ref='', **kwargs) :
         """Show a contour map of the dataset."""
         
         if coords == 'off' :
@@ -296,13 +296,13 @@ class Dataset(object) :
         if self.contour.kernel:
             cntr_args['kernel'] = self.contour.kernel
 
-        
         g.show_contour(data=hdu,levels=self.contour.levels,
                        colors=self.contour.colors,
                        linewidths=self.contour.linewidth,
                        linestyles=self.contour.linestyle,
-                       **cntr_args)
-
+                       layer=self.contour.layername,
+                       **cntr_args, **kwargs)
+        
 
 
 
@@ -616,7 +616,17 @@ class Contour(object):
             except AttributeError:
                 self.kernel = None
 
-            
+
+        if cnfg != None and 'legend_label' in cnfg:
+            self.layername = 'c_' + cnfg['legend_label']
+        else:
+            try:
+                self.layername = parent.contour.layername
+
+            except AttributeError:
+                self.layername = None
+
+                
         if name:
             if not hasattr(self, 'levels'):
                 try :
