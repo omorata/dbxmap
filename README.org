@@ -18,6 +18,7 @@ allows to define, among other things:
   + show a colorbar with the pixel data range
   + overlay polygons, lines, ellipses and symbol markers, with associated
     labels
+  + generate a legend from the contours and markers on the plot
 
 
 This is a work in progress and not all the planned functionalities are
@@ -76,4 +77,6 @@ which other objects may be in it:
           definitions
 - labels :: adds labels to the panels. If present, adds to previously defined
             labels
+- legend :: adds a legend to the panel. It can show defined markers or
+            contours
 
